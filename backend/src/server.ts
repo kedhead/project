@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { logger } from './utils/logger.util';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
+import authRoutes from './routes/auth.routes';
 
 // Load environment variables
 dotenv.config();
@@ -38,8 +39,9 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// API routes will be added here
-// app.use('/api/auth', authRoutes);
+// API routes
+app.use('/api/auth', authRoutes);
+// More routes will be added here
 // app.use('/api/users', userRoutes);
 // app.use('/api/teams', teamRoutes);
 // app.use('/api/projects', projectRoutes);
