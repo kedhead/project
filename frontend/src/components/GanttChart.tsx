@@ -1,5 +1,5 @@
 import { FC, useEffect, useRef, useState } from 'react';
-import { Gantt } from 'wx-react-gantt';
+import { Gantt, Toolbar } from 'wx-react-gantt';
 import 'wx-react-gantt/dist/gantt.css';
 import { Task, TaskStatus, TaskPriority, DependencyType } from '../types';
 import { taskApi, CreateTaskData, UpdateTaskData } from '../api/task.api';
@@ -221,7 +221,8 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
 
   return (
     <div className="gantt-container">
-      <div className="gantt-wrapper" style={{ width: '100%', height: '600px', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+      <div className="gantt-wrapper" style={{ width: '100%', height: '700px', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+        <Toolbar api={apiRef.current} />
         <Gantt
           tasks={ganttTasks}
           links={ganttLinks}
@@ -231,17 +232,26 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
             { unit: 'day', step: 1, format: 'd' },
           ]}
           columns={[
-            { id: 'text', label: 'Task Name', width: 250 },
-            { id: 'start', label: 'Start', width: 100 },
-            { id: 'end', label: 'End', width: 100 },
-            { id: 'duration', label: 'Days', width: 60 },
+            { id: 'text', label: 'Task Name', width: 250, align: 'left' },
+            { id: 'start', label: 'Start', width: 100, align: 'center' },
+            { id: 'end', label: 'End', width: 100, align: 'center' },
+            { id: 'duration', label: 'Days', width: 60, align: 'center' },
           ]}
+          cellWidth={50}
+          cellHeight={38}
+          scaleHeight={50}
+          readonly={false}
         />
       </div>
 
       <style>{`
         .gantt-container {
           width: 100%;
+        }
+
+        .gantt-wrapper {
+          display: flex;
+          flex-direction: column;
         }
 
         .gantt_task_line.milestone {
