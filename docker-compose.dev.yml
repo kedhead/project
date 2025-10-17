@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: node:20-alpine
+    image: node:20-slim
     working_dir: /app
     environment:
       NODE_ENV: development
