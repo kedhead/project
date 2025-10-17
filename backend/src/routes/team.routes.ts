@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { TeamController } from '../controllers/team.controller';
 import { ProjectController } from '../controllers/project.controller';
-import { authenticateToken } from '../middleware/authenticate';
+import { authenticate } from '../middleware/authenticate';
 
 const router = Router();
 const teamController = new TeamController();
 const projectController = new ProjectController();
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(authenticate);
 
 // Team CRUD operations
 router.post('/', (req, res) => teamController.createTeam(req, res));
