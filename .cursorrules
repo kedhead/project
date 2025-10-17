@@ -1,0 +1,2116 @@
+# Project Management Suite - AI Development Guide for Cursor
+
+## Document Purpose
+This guide provides AI agents with specific roles, rules, and step-by-step instructions to build a production-ready project management suite using svar.dev Gantt system. Feed this document to Cursor AI to maintain consistency and quality throughout development.
+
+---
+
+## Table of Contents
+1. [Project Overview](#project-overview)
+2. [AI Agents & Their Roles](#ai-agents--their-roles)
+3. [Universal Rules](#universal-rules)
+4. [Project Structure](#project-structure)
+5. [Phase-by-Phase Implementation](#phase-by-phase-implementation)
+6. [Code Patterns & Templates](#code-patterns--templates)
+7. [Quality Gates](#quality-gates)
+8. [Common Commands](#common-commands)
+
+---
+
+## Project Overview
+
+**Name:** Project Management Suite with svar.dev Gantt
+**Type:** Full-stack web application
+**Tech Stack:** React 18 + TypeScript, Node.js + Express, PostgreSQL, Redis, Docker
+**Deployment:** Ubuntu VPS with Docker Compose
+
+**Core Features:**
+- JWT-based authentication system
+- Team/group management with roles
+- Project management
+- Advanced Gantt chart with svar.dev
+- Task management with subtasks
+- Dependency tracking
+- Auto-scheduling engine (timeline cascade)
+- Color-coded tasks
+- Multi-format exports (PDF, Excel, CSV, PNG, JSON)
+
+**Critical Requirements:**
+- NO FAKE DATA - All features must work with real database operations
+- MODULAR ARCHITECTURE - Each component is independent and testable
+- PRODUCTION READY - Security, performance, and scalability first
+- DOCKER NATIVE - Containerized from day one
+
+---
+
+## AI Agents & Their Roles
+
+### Agent 1: Architecture Agent
+**Activation Phrase:** "Acting as Architecture Agent..."
+
+**Responsibilities:**
+- Design database schemas and relationships
+- Create system architecture decisions
+- Plan API endpoints and data flow
+- Review and approve major structural changes
+- Ensure modularity and separation of concerns
+
+**Rules:**
+1. Always use Prisma ORM - never raw SQL
+2. Design for scalability from the start
+3. Follow RESTful API conventions
+4. Document all architectural decisions
+5. Consider security implications in every design
+6. Use TypeScript strict mode for all type definitions
+
+**Output Format:**
+```
+## Architecture Decision: [Title]
+**Context:** [Why this decision is needed]
+**Decision:** [What we will do]
+**Rationale:** [Why this is the best approach]
+**Consequences:** [Trade-offs and implications]
+**Implementation:** [High-level steps]
+```
+
+---
+
+### Agent 2: Backend Agent
+**Activation Phrase:** "Acting as Backend Agent..."
+
+**Responsibilities:**
+- Implement API endpoints
+- Create database models and migrations
+- Handle authentication and authorization
+- Build business logic and services
+- Implement auto-scheduling engine
+- Create export functionality
+
+**Rules:**
+1. ALWAYS validate input with Zod schemas before processing
+2. ALWAYS use try-catch for async operations
+3. ALWAYS use Prisma transactions for multi-table operations
+4. NEVER use console.log - use Winston logger
+5. NEVER store sensitive data in plain text
+6. ALWAYS implement rate limiting on public endpoints
+7. ALWAYS return consistent error responses: `{ success: false, error: "message", code: "ERROR_CODE" }`
+8. ALWAYS return consistent success responses: `{ success: true, data: {...} }`
+9. Use dependency injection for services
+10. Write unit tests for all business logic (80%+ coverage)
+
+**File Naming Convention:**
+- Routes: `src/routes/[resource].routes.ts`
+- Controllers: `src/controllers/[resource].controller.ts`
+- Services: `src/services/[resource].service.ts`
+- Middleware: `src/middleware/[name].middleware.ts`
+- Models: Defined in `prisma/schema.prisma`
+
+**Code Structure:**
+```typescript
+// Route → Controller → Service → Database
+// Routes handle HTTP, Controllers orchestrate, Services contain business logic
+```
+
+**Endpoint Pattern:**
+```typescript
+// routes/tasks.routes.ts
+router.post('/tasks', authenticate, authorize(['admin', 'manager']), taskController.create);
+
+// controllers/task.controller.ts
+async create(req: Request, res: Response) {
+  try {
+    const validated = TaskCreateSchema.parse(req.body);
+    const task = await taskService.create(validated, req.user.id);
+    res.json({ success: true, data: task });
+  } catch (error) {
+    logger.error('Task creation failed', error);
+    res.status(400).json({ success: false, error: error.message, code: 'TASK_CREATE_FAILED' });
+  }
+}
+
+// services/task.service.ts
+async create(data: TaskCreate, userId: string) {
+  return prisma.task.create({
+    data: {
+      ...data,
+      createdBy: userId
+    },
+    include: {
+      assignees: true,
+      project: true
+    }
+  });
+}
+```
+
+---
+
+### Agent 3: Frontend Agent
+**Activation Phrase:** "Acting as Frontend Agent..."
+
+**Responsibilities:**
+- Build React components
+- Integrate svar.dev Gantt
+- Implement state management
+- Create responsive UI
+- Handle client-side routing
+- Connect to backend APIs
+
+**Rules:**
+1. Components MUST NOT exceed 250 lines
+2. ALWAYS define TypeScript interfaces for props
+3. ALWAYS use functional components with hooks
+4. Use Zustand for global state, useState for local state
+5. NEVER call APIs directly - use centralized API client
+6. ALWAYS handle loading and error states
+7. ALWAYS make components keyboard accessible (ARIA labels, tab order)
+8. Use TailwindCSS for styling - no custom CSS unless necessary
+9. Extract reusable logic into custom hooks
+10. Write integration tests for critical user flows
+
+**File Naming Convention:**
+- Components: `src/components/[Name]/[Name].tsx`
+- Pages: `src/pages/[Name]Page.tsx`
+- Hooks: `src/hooks/use[Name].ts`
+- Stores: `src/stores/[name]Store.ts`
+- Utils: `src/utils/[name].util.ts`
+
+**Component Structure:**
+```typescript
+// src/components/TaskCard/TaskCard.tsx
+import { FC } from 'react';
+
+interface TaskCardProps {
+  task: Task;
+  onEdit: (taskId: string) => void;
+  onDelete: (taskId: string) => void;
+}
+
+export const TaskCard: FC<TaskCardProps> = ({ task, onEdit, onDelete }) => {
+  // 1. Hooks
+  const { user } = useAuthStore();
+  
+  // 2. Local state
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // 3. Derived state
+  const canEdit = user?.role === 'admin' || task.createdBy === user?.id;
+  
+  // 4. Event handlers
+  const handleEdit = () => {
+    if (canEdit) onEdit(task.id);
+  };
+  
+  // 5. Effects
+  useEffect(() => {
+    // Side effects
+  }, []);
+  
+  // 6. Render
+  return (
+    <div className="p-4 border rounded-lg">
+      {/* Component JSX */}
+    </div>
+  );
+};
+```
+
+**API Client Pattern:**
+```typescript
+// src/api/client.ts
+import axios from 'axios';
+
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  timeout: 10000
+});
+
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default apiClient;
+```
+
+---
+
+### Agent 4: DevOps Agent
+**Activation Phrase:** "Acting as DevOps Agent..."
+
+**Responsibilities:**
+- Create Docker configurations
+- Set up Docker Compose
+- Configure Nginx
+- Implement CI/CD pipelines
+- Set up monitoring and logging
+- Manage environment variables
+
+**Rules:**
+1. NEVER commit secrets or API keys
+2. ALWAYS use multi-stage Docker builds for optimization
+3. ALWAYS implement health checks in Docker services
+4. Use environment variables for all configuration
+5. Implement automated backups for PostgreSQL
+6. Set up proper volume mounts for data persistence
+7. Configure proper restart policies
+8. Implement rate limiting at Nginx level
+9. Always use HTTPS in production
+10. Document all deployment steps
+
+**File Naming Convention:**
+- `Dockerfile` for each service
+- `docker-compose.yml` for orchestration
+- `docker-compose.dev.yml` for development overrides
+- `.env.example` for environment template
+- `nginx/nginx.conf` for web server config
+
+**Docker Structure:**
+```
+project-root/
+├── docker/
+│   ├── frontend/
+│   │   └── Dockerfile
+│   ├── backend/
+│   │   └── Dockerfile
+│   └── nginx/
+│       ├── Dockerfile
+│       └── nginx.conf
+├── docker-compose.yml
+├── docker-compose.dev.yml
+└── .env.example
+```
+
+---
+
+### Agent 5: Database Agent
+**Activation Phrase:** "Acting as Database Agent..."
+
+**Responsibilities:**
+- Design database schema
+- Create Prisma models
+- Write migrations
+- Optimize queries
+- Design indexes
+- Handle data relationships
+
+**Rules:**
+1. ALWAYS use Prisma schema for database definitions
+2. ALWAYS create migrations for schema changes
+3. Use appropriate indexes for frequently queried fields
+4. Design for data integrity with foreign keys
+5. Use cascading deletes appropriately
+6. Document complex relationships
+7. Use enums for fixed value sets
+8. Always use UUIDs for primary keys
+9. Include createdAt and updatedAt timestamps
+10. Test migrations before deploying
+
+**Schema Pattern:**
+```prisma
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          UserRole @default(MEMBER)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  createdTasks  Task[]   @relation("TaskCreator")
+  assignedTasks Task[]   @relation("TaskAssignee")
+  teams         TeamMember[]
+  
+  @@index([email])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  MEMBER
+  VIEWER
+}
+```
+
+---
+
+### Agent 6: Testing Agent
+**Activation Phrase:** "Acting as Testing Agent..."
+
+**Responsibilities:**
+- Write unit tests
+- Create integration tests
+- Build E2E tests
+- Verify test coverage
+- Test edge cases
+- Create test fixtures
+
+**Rules:**
+1. ALWAYS achieve 80%+ coverage for backend
+2. ALWAYS achieve 70%+ coverage for frontend
+3. Use Jest for unit tests
+4. Use Supertest for API integration tests
+5. Use Playwright for E2E tests
+6. NEVER use hardcoded test data - use factories
+7. Test happy paths AND error cases
+8. Mock external dependencies
+9. Write descriptive test names
+10. Follow AAA pattern: Arrange, Act, Assert
+
+**Test Structure:**
+```typescript
+// __tests__/services/task.service.test.ts
+import { taskService } from '@/services/task.service';
+import { prismaMock } from '@/test/prismaMock';
+
+describe('TaskService', () => {
+  describe('create', () => {
+    it('should create a task with valid data', async () => {
+      // Arrange
+      const taskData = { title: 'Test Task', projectId: 'proj-123' };
+      const userId = 'user-123';
+      const expectedTask = { id: 'task-123', ...taskData, createdBy: userId };
+      
+      prismaMock.task.create.mockResolvedValue(expectedTask);
+      
+      // Act
+      const result = await taskService.create(taskData, userId);
+      
+      // Assert
+      expect(result).toEqual(expectedTask);
+      expect(prismaMock.task.create).toHaveBeenCalledWith({
+        data: { ...taskData, createdBy: userId },
+        include: { assignees: true, project: true }
+      });
+    });
+    
+    it('should throw error when project does not exist', async () => {
+      // Arrange
+      prismaMock.task.create.mockRejectedValue(new Error('Project not found'));
+      
+      // Act & Assert
+      await expect(
+        taskService.create({ title: 'Test', projectId: 'invalid' }, 'user-123')
+      ).rejects.toThrow('Project not found');
+    });
+  });
+});
+```
+
+---
+
+### Agent 7: Security Agent
+**Activation Phrase:** "Acting as Security Agent..."
+
+**Responsibilities:**
+- Review code for security vulnerabilities
+- Implement authentication and authorization
+- Set up rate limiting
+- Configure CORS
+- Handle sensitive data
+- Perform security audits
+
+**Rules:**
+1. NEVER store passwords in plain text - use bcrypt with 12 rounds
+2. ALWAYS validate and sanitize user input
+3. ALWAYS use parameterized queries (Prisma handles this)
+4. Implement JWT with short expiry (15 min) and refresh tokens
+5. Use HTTPS only in production
+6. Implement CSRF protection
+7. Set secure HTTP headers (helmet.js)
+8. Rate limit all public endpoints
+9. Implement proper CORS configuration
+10. Never expose sensitive errors to clients
+
+**Security Checklist:**
+```typescript
+// Security implementation checklist
+✓ Password hashing with bcrypt (12 rounds)
+✓ JWT tokens with expiry
+✓ Refresh token mechanism
+✓ Rate limiting (express-rate-limit)
+✓ Input validation (Zod)
+✓ SQL injection prevention (Prisma)
+✓ XSS prevention (sanitize inputs)
+✓ CORS configuration (whitelist origins)
+✓ Helmet.js for security headers
+✓ Environment variable for secrets
+✓ HTTPS enforcement
+✓ Session management
+```
+
+---
+
+## Universal Rules
+
+These rules apply to ALL agents at ALL times:
+
+### Code Quality Rules
+1. **TypeScript Strict Mode:** All code must use TypeScript with strict mode enabled
+2. **No ESLint Errors:** Zero tolerance for linting errors or warnings
+3. **Meaningful Names:** Use descriptive variable and function names
+4. **DRY Principle:** Don't repeat yourself - extract common logic
+5. **KISS Principle:** Keep it simple, stupid - avoid over-engineering
+6. **Comments:** JSDoc comments for all public functions and complex logic
+
+### Git Workflow Rules
+1. **Branch Naming:** `feature/description`, `bugfix/description`, `hotfix/description`
+2. **Commit Messages:** Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`
+3. **Small Commits:** Commit frequently with focused changes
+4. **No Direct Main:** Never commit directly to main branch
+5. **Pull Requests:** Require review before merging
+
+### Development Workflow Rules
+1. **Test First:** Write tests before implementing features when possible
+2. **Run Tests:** Always run tests before committing
+3. **Check Types:** Run TypeScript compiler before committing
+4. **No console.log:** Use proper logging (Winston for backend)
+5. **Error Handling:** Every async operation must have error handling
+6. **Documentation:** Update docs when changing functionality
+
+### File Organization Rules
+```
+project-management-suite/
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── pages/           # Page components
+│   │   ├── hooks/           # Custom React hooks
+│   │   ├── stores/          # Zustand stores
+│   │   ├── api/             # API client and endpoints
+│   │   ├── utils/           # Utility functions
+│   │   ├── types/           # TypeScript types
+│   │   └── App.tsx
+│   ├── tests/               # Test files
+│   └── package.json
+├── backend/
+│   ├── src/
+│   │   ├── routes/          # API routes
+│   │   ├── controllers/     # Request handlers
+│   │   ├── services/        # Business logic
+│   │   ├── middleware/      # Express middleware
+│   │   ├── utils/           # Utility functions
+│   │   ├── types/           # TypeScript types
+│   │   └── server.ts
+│   ├── prisma/
+│   │   ├── schema.prisma    # Database schema
+│   │   └── migrations/      # Database migrations
+│   ├── tests/               # Test files
+│   └── package.json
+├── docker/                  # Docker configurations
+├── nginx/                   # Nginx configurations
+├── docker-compose.yml
+└── README.md
+```
+
+---
+
+## Project Structure
+
+### Complete Directory Structure
+```
+project-management-suite/
+├── README.md
+├── .gitignore
+├── .env.example
+├── docker-compose.yml
+├── docker-compose.dev.yml
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── common/          # Button, Input, Modal, etc.
+│   │   │   ├── layout/          # Header, Sidebar, Footer
+│   │   │   ├── auth/            # LoginForm, RegisterForm
+│   │   │   ├── teams/           # TeamCard, TeamList, TeamForm
+│   │   │   ├── projects/        # ProjectCard, ProjectList, ProjectForm
+│   │   │   ├── tasks/           # TaskCard, TaskList, TaskForm
+│   │   │   └── gantt/           # GanttChart, GanttToolbar
+│   │   ├── pages/
+│   │   │   ├── HomePage.tsx
+│   │   │   ├── LoginPage.tsx
+│   │   │   ├── DashboardPage.tsx
+│   │   │   ├── TeamsPage.tsx
+│   │   │   ├── ProjectsPage.tsx
+│   │   │   └── GanttPage.tsx
+│   │   ├── hooks/
+│   │   │   ├── useAuth.ts
+│   │   │   ├── useProjects.ts
+│   │   │   ├── useTasks.ts
+│   │   │   └── useGantt.ts
+│   │   ├── stores/
+│   │   │   ├── authStore.ts
+│   │   │   ├── projectStore.ts
+│   │   │   └── taskStore.ts
+│   │   ├── api/
+│   │   │   ├── client.ts        # Axios instance
+│   │   │   ├── auth.api.ts
+│   │   │   ├── teams.api.ts
+│   │   │   ├── projects.api.ts
+│   │   │   └── tasks.api.ts
+│   │   ├── utils/
+│   │   │   ├── validators.ts
+│   │   │   ├── formatters.ts
+│   │   │   └── constants.ts
+│   │   ├── types/
+│   │   │   ├── auth.types.ts
+│   │   │   ├── team.types.ts
+│   │   │   ├── project.types.ts
+│   │   │   └── task.types.ts
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── vite.config.ts
+│   └── tailwind.config.js
+│
+├── backend/
+│   ├── src/
+│   │   ├── routes/
+│   │   │   ├── auth.routes.ts
+│   │   │   ├── users.routes.ts
+│   │   │   ├── teams.routes.ts
+│   │   │   ├── projects.routes.ts
+│   │   │   ├── tasks.routes.ts
+│   │   │   └── exports.routes.ts
+│   │   ├── controllers/
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── users.controller.ts
+│   │   │   ├── teams.controller.ts
+│   │   │   ├── projects.controller.ts
+│   │   │   ├── tasks.controller.ts
+│   │   │   └── exports.controller.ts
+│   │   ├── services/
+│   │   │   ├── auth.service.ts
+│   │   │   ├── users.service.ts
+│   │   │   ├── teams.service.ts
+│   │   │   ├── projects.service.ts
+│   │   │   ├── tasks.service.ts
+│   │   │   ├── scheduling.service.ts    # Auto-scheduling engine
+│   │   │   └── exports.service.ts
+│   │   ├── middleware/
+│   │   │   ├── authenticate.ts
+│   │   │   ├── authorize.ts
+│   │   │   ├── validate.ts
+│   │   │   ├── rateLimiter.ts
+│   │   │   └── errorHandler.ts
+│   │   ├── utils/
+│   │   │   ├── jwt.util.ts
+│   │   │   ├── password.util.ts
+│   │   │   ├── email.util.ts
+│   │   │   └── logger.util.ts
+│   │   ├── types/
+│   │   │   ├── express.d.ts         # Extend Express types
+│   │   │   └── api.types.ts
+│   │   ├── config/
+│   │   │   ├── database.ts
+│   │   │   ├── redis.ts
+│   │   │   └── env.ts
+│   │   └── server.ts
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   ├── seed.ts
+│   │   └── migrations/
+│   ├── tests/
+│   │   ├── unit/
+│   │   ├── integration/
+│   │   └── fixtures/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── docker/
+│   ├── frontend/
+│   │   └── Dockerfile
+│   ├── backend/
+│   │   └── Dockerfile
+│   └── nginx/
+│       ├── Dockerfile
+│       └── nginx.conf
+│
+└── scripts/
+    ├── setup.sh              # Initial setup script
+    ├── deploy.sh             # Deployment script
+    └── backup.sh             # Backup script
+```
+
+---
+
+## Phase-by-Phase Implementation
+
+### Phase 1: Foundation & Infrastructure (Weeks 1-3)
+
+#### Step 1.1: Initialize Project Structure
+**Agent:** Architecture Agent
+
+**Tasks:**
+1. Create root directory: `project-management-suite`
+2. Initialize Git repository
+3. Create monorepo structure with frontend and backend folders
+4. Set up package.json files
+5. Initialize TypeScript configs
+6. Set up ESLint and Prettier
+
+**Commands:**
+```bash
+mkdir project-management-suite && cd project-management-suite
+git init
+
+# Create directories
+mkdir -p frontend/src/{components,pages,hooks,stores,api,utils,types}
+mkdir -p backend/src/{routes,controllers,services,middleware,utils,types,config}
+mkdir -p backend/prisma
+mkdir -p docker/{frontend,backend,nginx}
+mkdir -p scripts
+
+# Initialize projects
+cd frontend && npm init -y && cd ..
+cd backend && npm init -y && cd ..
+```
+
+**Deliverables:**
+- [ ] Project structure created
+- [ ] Git repository initialized
+- [ ] Package managers configured
+- [ ] TypeScript configs created
+- [ ] Linting rules established
+
+---
+
+#### Step 1.2: Set Up Docker Environment
+**Agent:** DevOps Agent
+
+**Tasks:**
+1. Create Dockerfile for frontend
+2. Create Dockerfile for backend
+3. Create docker-compose.yml
+4. Set up PostgreSQL service
+5. Set up Redis service
+6. Set up Nginx configuration
+7. Create .env.example
+
+**Files to Create:**
+
+**`docker-compose.yml`:**
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-pmuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pmpass}
+      POSTGRES_DB: ${DB_NAME:-pmdb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pmuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redispass}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgresql://${DB_USER:-pmuser}:${DB_PASSWORD:-pmpass}@postgres:5432/${DB_NAME:-pmdb}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redispass}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:4000/api}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    command: npm run dev
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+volumes:
+  postgres_data:
+  redis_data:
+```
+
+**`.env.example`:**
+```env
+# Database
+DB_USER=pmuser
+DB_PASSWORD=your_secure_password_here
+DB_NAME=pmdb
+DATABASE_URL=postgresql://pmuser:your_secure_password_here@postgres:5432/pmdb
+
+# Redis
+REDIS_PASSWORD=your_redis_password_here
+REDIS_URL=redis://:your_redis_password_here@redis:6379
+
+# JWT
+JWT_SECRET=your_jwt_secret_key_here_min_32_chars
+JWT_REFRESH_SECRET=your_jwt_refresh_secret_key_here_min_32_chars
+JWT_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
+
+# API
+NODE_ENV=development
+PORT=4000
+API_URL=http://localhost:4000
+
+# Frontend
+VITE_API_URL=http://localhost:4000/api
+
+# Email (for production)
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASSWORD=
+EMAIL_FROM=
+```
+
+**Deliverables:**
+- [ ] All Dockerfiles created
+- [ ] docker-compose.yml configured
+- [ ] Environment variables documented
+- [ ] Services start successfully
+- [ ] Health checks pass
+
+---
+
+#### Step 1.3: Initialize Database Schema
+**Agent:** Database Agent
+
+**Tasks:**
+1. Install Prisma
+2. Initialize Prisma schema
+3. Design initial database models
+4. Create first migration
+5. Set up seed data script
+
+**Commands:**
+```bash
+cd backend
+npm install -D prisma
+npm install @prisma/client
+npx prisma init
+```
+
+**`prisma/schema.prisma`:**
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum TeamRole {
+  ADMIN
+  MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+  ON_HOLD
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DependencyType {
+  FINISH_TO_START
+  START_TO_START
+  FINISH_TO_FINISH
+  START_TO_FINISH
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          UserRole @default(MEMBER)
+  avatar        String?
+  isActive      Boolean  @default(true)
+  emailVerified Boolean  @default(false)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+  
+  // Relations
+  createdTasks     Task[]         @relation("TaskCreator")
+  assignedTasks    TaskAssignee[]
+  teamMemberships  TeamMember[]
+  createdProjects  Project[]      @relation("ProjectCreator")
+  refreshTokens    RefreshToken[]
+  notifications    Notification[]
+  comments         Comment[]
+  
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  avatar      String?
+  color       String?  // For color-coding in Gantt
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  members  TeamMember[]
+  projects ProjectTeam[]
+  
+  @@map("teams")
+}
+
+model TeamMember {
+  id       String   @id @default(uuid())
+  teamId   String
+  userId   String
+  role     TeamRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+  
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  budget      Float?
+  status      String    @default("ACTIVE")
+  color       String?
+  
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  createdBy User          @relation("ProjectCreator", fields: [createdById], references: [id])
+  teams     ProjectTeam[]
+  tasks     Task[]
+  
+  @@index([createdById])
+  @@index([status])
+  @@map("projects")
+}
+
+model ProjectTeam {
+  id        String   @id @default(uuid())
+  projectId String
+  teamId    String
+  addedAt   DateTime @default(now())
+  
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  team    Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, teamId])
+  @@index([projectId])
+  @@index([teamId])
+  @@map("project_teams")
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  projectId   String
+  parentId    String?      // For subtasks
+  
+  startDate   DateTime
+  endDate     DateTime
+  duration    Int          // In days
+  progress    Int          @default(0) // 0-100
+  
+  status      TaskStatus   @default(NOT_STARTED)
+  priority    TaskPriority @default(MEDIUM)
+  color       String?      // Custom color override
+  isLocked    Boolean      @default(false) // Prevent auto-scheduling
+  isMilestone Boolean      @default(false)
+  
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Relations
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy         User               @relation("TaskCreator", fields: [createdById], references: [id])
+  parent            Task?              @relation("TaskHierarchy", fields: [parentId], references: [id])
+  subtasks          Task[]             @relation("TaskHierarchy")
+  assignees         TaskAssignee[]
+  dependencies      TaskDependency[]   @relation("TaskDependencies")
+  dependents        TaskDependency[]   @relation("TaskDependents")
+  comments          Comment[]
+  
+  @@index([projectId])
+  @@index([parentId])
+  @@index([createdById])
+  @@index([status])
+  @@index([priority])
+  @@map("tasks")
+}
+
+model TaskAssignee {
+  id       String   @id @default(uuid())
+  taskId   String
+  userId   String
+  assignedAt DateTime @default(now())
+  
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
+  @@map("task_assignees")
+}
+
+model TaskDependency {
+  id             String         @id @default(uuid())
+  taskId         String         // The dependent task
+  dependsOnId    String         // The task it depends on
+  type           DependencyType @default(FINISH_TO_START)
+  lagDays        Int            @default(0) // Lag time in days
+  
+  createdAt      DateTime       @default(now())
+  
+  task       Task @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn  Task @relation("TaskDependents", fields: [dependsOnId], references: [id], onDelete: Cascade)
+  
+  @@unique([taskId, dependsOnId])
+  @@index([taskId])
+  @@index([dependsOnId])
+  @@map("task_dependencies")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  taskId    String
+  userId    String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([taskId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // 'TASK_ASSIGNED', 'TASK_UPDATED', 'COMMENT', etc.
+  isRead    Boolean  @default(false)
+  link      String?  // Link to related resource
+  
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+```
+
+**Commands to Create Migration:**
+```bash
+npx prisma migrate dev --name init
+npx prisma generate
+```
+
+**Deliverables:**
+- [ ] Prisma schema defined
+- [ ] Initial migration created
+- [ ] Prisma Client generated
+- [ ] Database models documented
+
+---
+
+#### Step 1.4: Set Up Backend Foundation
+**Agent:** Backend Agent
+
+**Tasks:**
+1. Install backend dependencies
+2. Create Express server setup
+3. Configure middleware
+4. Create basic health check endpoint
+5. Set up logging
+6. Configure CORS
+
+**`backend/package.json` dependencies:**
+```json
+{
+  "dependencies": {
+    "express": "^4.18.2",
+    "@prisma/client": "^5.7.0",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.22.4",
+    "winston": "^3.11.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "redis": "^4.6.11",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.5",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/cors": "^2.8.17",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "prisma": "^5.7.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11"
+  }
+}
+```
+
+**`backend/src/server.ts`:**
+```typescript
+import express, { Express, Request, Response } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { logger } from './utils/logger.util';
+import { errorHandler } from './middleware/errorHandler';
+
+dotenv.config();
+
+const app: Express = express();
+const PORT = process.env.PORT || 4000;
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Health check
+app.get('/health', (req: Request, res: Response) => {
+  res.json({ 
+    success: true, 
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API routes
+app.use('/api/auth', require('./routes/auth.routes'));
+// More routes will be added here
+
+// Error handling
+app.use(errorHandler);
+
+// Start server
+app.listen(PORT, () => {
+  logger.info(`🚀 Server running on port ${PORT}`);
+});
+
+export default app;
+```
+
+**`backend/src/utils/logger.util.ts`:**
+```typescript
+import winston from 'winston';
+
+export const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+  ],
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.simple()
+    ),
+  }));
+}
+```
+
+**Deliverables:**
+- [ ] Express server running
+- [ ] Middleware configured
+- [ ] Health check endpoint working
+- [ ] Logging system operational
+
+---
+
+#### Step 1.5: Set Up Frontend Foundation
+**Agent:** Frontend Agent
+
+**Tasks:**
+1. Install frontend dependencies
+2. Set up Vite + React + TypeScript
+3. Configure TailwindCSS
+4. Create basic routing
+5. Set up API client
+6. Create basic layout components
+
+**`frontend/package.json` dependencies:**
+```json
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.1",
+    "axios": "^1.6.2",
+    "zustand": "^4.4.7",
+    "@svar-dev/gantt": "^latest",
+    "tailwindcss": "^3.3.6",
+    "react-hook-form": "^7.49.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.7",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  }
+}
+```
+
+**`frontend/src/main.tsx`:**
+```typescript
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
+```
+
+**`frontend/src/App.tsx`:**
+```typescript
+import { Routes, Route } from 'react-router-dom';
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
+
+function App() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+      </Routes>
+    </div>
+  );
+}
+
+export default App;
+```
+
+**Deliverables:**
+- [ ] React app running
+- [ ] TailwindCSS configured
+- [ ] Routing set up
+- [ ] API client created
+- [ ] Basic pages created
+
+---
+
+### Phase 2: Authentication & User Management (Weeks 4-6)
+
+#### Step 2.1: Implement Authentication Backend
+**Agent:** Backend Agent + Security Agent
+
+**Tasks:**
+1. Create auth service with bcrypt password hashing
+2. Implement JWT token generation
+3. Create refresh token mechanism
+4. Build auth routes and controllers
+5. Add rate limiting to auth endpoints
+6. Create middleware for authentication
+
+**`backend/src/services/auth.service.ts`:**
+```typescript
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
+import { logger } from '../utils/logger.util';
+
+const prisma = new PrismaClient();
+const SALT_ROUNDS = 12;
+
+export class AuthService {
+  async register(email: string, password: string, firstName: string, lastName: string) {
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      throw new Error('User already exists');
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
+    });
+
+    logger.info(`User registered: ${email}`);
+    return user;
+  }
+
+  async login(email: string, password: string) {
+    // Find user
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new Error('Invalid credentials');
+    }
+
+    // Verify password
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isValid) {
+      throw new Error('Invalid credentials');
+    }
+
+    // Generate tokens
+    const accessToken = this.generateAccessToken(user.id, user.role);
+    const refreshToken = this.generateRefreshToken(user.id);
+
+    // Store refresh token
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      },
+    });
+
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    logger.info(`User logged in: ${email}`);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  private generateAccessToken(userId: string, role: string): string {
+    return jwt.sign(
+      { userId, role },
+      process.env.JWT_SECRET!,
+      { expiresIn: process.env.JWT_EXPIRY || '15m' }
+    );
+  }
+
+  private generateRefreshToken(userId: string): string {
+    return jwt.sign(
+      { userId },
+      process.env.JWT_REFRESH_SECRET!,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRY || '7d' }
+    );
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    try {
+      // Verify refresh token
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as { userId: string };
+
+      // Check if token exists in database
+      const storedToken = await prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { user: true },
+      });
+
+      if (!storedToken || storedToken.expiresAt < new Date()) {
+        throw new Error('Invalid or expired refresh token');
+      }
+
+      // Generate new access token
+      const accessToken = this.generateAccessToken(storedToken.user.id, storedToken.user.role);
+
+      return { accessToken };
+    } catch (error) {
+      throw new Error('Invalid refresh token');
+    }
+  }
+
+  async logout(refreshToken: string) {
+    await prisma.refreshToken.delete({
+      where: { token: refreshToken },
+    });
+    logger.info('User logged out');
+  }
+}
+
+export const authService = new AuthService();
+```
+
+**`backend/src/middleware/authenticate.ts`:**
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { logger } from '../utils/logger.util';
+
+export interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    role: string;
+  };
+}
+
+export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided',
+        code: 'NO_TOKEN',
+      });
+    }
+
+    const token = authHeader.substring(7);
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: string;
+      role: string;
+    };
+
+    req.user = decoded;
+    next();
+  } catch (error) {
+    logger.error('Authentication failed', error);
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid or expired token',
+      code: 'INVALID_TOKEN',
+    });
+  }
+};
+```
+
+**Continue with controllers, routes, etc...**
+
+---
+
+### Phase 3: Teams & Projects (Weeks 7-10)
+### Phase 4: Gantt Chart & Auto-Scheduling (Weeks 11-15)
+### Phase 5: Export System & Polish (Weeks 16-20)
+
+[Content continues with detailed steps for each phase...]
+
+---
+
+## Code Patterns & Templates
+
+### API Response Pattern
+```typescript
+// Success response
+{
+  success: true,
+  data: { ... }
+}
+
+// Error response
+{
+  success: false,
+  error: "Error message",
+  code: "ERROR_CODE"
+}
+```
+
+### Validation Pattern with Zod
+```typescript
+import { z } from 'zod';
+
+export const TaskCreateSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().optional(),
+  projectId: z.string().uuid(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+  assigneeIds: z.array(z.string().uuid()).optional(),
+});
+
+export type TaskCreate = z.infer<typeof TaskCreateSchema>;
+```
+
+### React Hook Pattern
+```typescript
+import { useState, useEffect } from 'react';
+import { tasksApi } from '@/api/tasks.api';
+import { Task } from '@/types/task.types';
+
+export const useTasks = (projectId: string) => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [projectId]);
+
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const data = await tasksApi.getByProject(projectId);
+      setTasks(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createTask = async (taskData: TaskCreate) => {
+    const newTask = await tasksApi.create(taskData);
+    setTasks(prev => [...prev, newTask]);
+    return newTask;
+  };
+
+  const updateTask = async (id: string, updates: Partial<Task>) => {
+    const updated = await tasksApi.update(id, updates);
+    setTasks(prev => prev.map(t => t.id === id ? updated : t));
+    return updated;
+  };
+
+  const deleteTask = async (id: string) => {
+    await tasksApi.delete(id);
+    setTasks(prev => prev.filter(t => t.id !== id));
+  };
+
+  return {
+    tasks,
+    loading,
+    error,
+    createTask,
+    updateTask,
+    deleteTask,
+    refetch: fetchTasks,
+  };
+};
+```
+
+---
+
+## Quality Gates
+
+Before moving to the next phase, verify:
+
+### Phase 1 Gates
+- [ ] All services start with `docker-compose up`
+- [ ] Database migrations run successfully
+- [ ] Health check endpoint returns 200
+- [ ] Frontend displays on localhost:3000
+- [ ] Backend responds on localhost:4000
+- [ ] No ESLint errors
+- [ ] All TypeScript compiles
+
+### Phase 2 Gates
+- [ ] Users can register with email validation
+- [ ] Users can login and receive JWT tokens
+- [ ] Protected routes require authentication
+- [ ] Password reset flow works end-to-end
+- [ ] Rate limiting prevents brute force
+- [ ] Unit tests pass (80%+ coverage)
+- [ ] Integration tests pass
+
+### Phase 3 Gates
+- [ ] Teams can be created and managed
+- [ ] Members can be invited and assigned roles
+- [ ] Projects can be created and assigned to teams
+- [ ] Tasks can be created with all metadata
+- [ ] Subtasks work correctly
+- [ ] All CRUD operations tested
+
+### Phase 4 Gates
+- [ ] Gantt chart renders tasks correctly
+- [ ] Tasks can be dragged and dropped
+- [ ] Dependencies display as arrows
+- [ ] Auto-scheduling cascades timeline changes
+- [ ] Critical path is calculated correctly
+- [ ] Color coding works for all rule types
+- [ ] Performance: 500 tasks render in <2 seconds
+
+### Phase 5 Gates
+- [ ] PDF export generates correctly
+- [ ] Excel export has all sheets
+- [ ] CSV export works
+- [ ] PNG export renders Gantt chart
+- [ ] JSON export includes all data
+- [ ] Email delivery works
+- [ ] All security tests pass
+- [ ] Performance tests meet targets
+- [ ] Production deployment successful
+
+---
+
+## Common Commands
+
+### Development
+```bash
+# Start all services
+docker-compose up
+
+# Start in detached mode
+docker-compose up -d
+
+# Rebuild after changes
+docker-compose up --build
+
+# View logs
+docker-compose logs -f [service_name]
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (fresh start)
+docker-compose down -v
+```
+
+### Database
+```bash
+# Create migration
+cd backend && npx prisma migrate dev --name [migration_name]
+
+# Apply migrations
+npx prisma migrate deploy
+
+# Reset database (DEV ONLY)
+npx prisma migrate reset
+
+# Generate Prisma Client
+npx prisma generate
+
+# Open Prisma Studio
+npx prisma studio
+
+# Seed database
+npx prisma db seed
+```
+
+### Testing
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test [file_name]
+```
+
+### Linting
+```bash
+# Run ESLint
+npm run lint
+
+# Fix auto-fixable issues
+npm run lint:fix
+
+# Check TypeScript
+npx tsc --noEmit
+```
+
+---
+
+## Auto-Scheduling Algorithm
+
+The auto-scheduling engine is a critical feature. Here's the algorithm:
+
+### Algorithm Overview
+```typescript
+/**
+ * Auto-Scheduling Algorithm
+ * 
+ * When a task's dates change, we need to update all dependent tasks.
+ * This is done by traversing the dependency graph in topological order.
+ */
+
+interface TaskUpdate {
+  taskId: string;
+  startDate: Date;
+  endDate: Date;
+}
+
+async function autoSchedule(changedTaskId: string, newDates: { startDate: Date, endDate: Date }): Promise<TaskUpdate[]> {
+  // 1. Get the changed task
+  const task = await getTask(changedTaskId);
+  
+  // 2. Find all tasks that depend on this task (directly or indirectly)
+  const dependentTasks = await getDependentTasks(changedTaskId);
+  
+  // 3. Build dependency graph
+  const graph = buildDependencyGraph(dependentTasks);
+  
+  // 4. Topological sort to get correct update order
+  const sortedTasks = topologicalSort(graph);
+  
+  // 5. Calculate new dates for each dependent task
+  const updates: TaskUpdate[] = [];
+  
+  for (const depTask of sortedTasks) {
+    // Get all dependencies for this task
+    const dependencies = await getTaskDependencies(depTask.id);
+    
+    // Calculate new start/end based on dependencies
+    let newStart = depTask.startDate;
+    
+    for (const dep of dependencies) {
+      const depTaskDates = updates.find(u => u.taskId === dep.dependsOnId) 
+        || await getTask(dep.dependsOnId);
+      
+      switch (dep.type) {
+        case 'FINISH_TO_START':
+          // This task starts after dependency finishes
+          const proposedStart = addWorkingDays(depTaskDates.endDate, dep.lagDays);
+          if (proposedStart > newStart) {
+            newStart = proposedStart;
+          }
+          break;
+          
+        case 'START_TO_START':
+          // This task starts when dependency starts
+          const ssProposedStart = addWorkingDays(depTaskDates.startDate, dep.lagDays);
+          if (ssProposedStart > newStart) {
+            newStart = ssProposedStart;
+          }
+          break;
+          
+        // Handle other dependency types...
+      }
+    }
+    
+    // Calculate new end date based on duration
+    const newEnd = addWorkingDays(newStart, depTask.duration);
+    
+    updates.push({
+      taskId: depTask.id,
+      startDate: newStart,
+      endDate: newEnd,
+    });
+  }
+  
+  // 6. Return all updates (can be applied in a transaction)
+  return updates;
+}
+
+function addWorkingDays(startDate: Date, days: number): Date {
+  let current = new Date(startDate);
+  let remainingDays = days;
+  
+  while (remainingDays > 0) {
+    current.setDate(current.getDate() + 1);
+    
+    // Skip weekends
+    if (current.getDay() !== 0 && current.getDay() !== 6) {
+      remainingDays--;
+    }
+    
+    // TODO: Also skip holidays from database
+  }
+  
+  return current;
+}
+```
+
+---
+
+## Export Templates
+
+### PDF Export Structure
+```typescript
+/**
+ * PDF Export Layout:
+ * 
+ * Page 1: Cover Page
+ * - Project name
+ * - Date range
+ * - Created by
+ * - Export date
+ * 
+ * Page 2: Project Summary
+ * - Description
+ * - Status
+ * - Budget
+ * - Team members
+ * - Key metrics
+ * 
+ * Page 3+: Gantt Chart
+ * - Visual timeline
+ * - Tasks with progress bars
+ * - Dependencies shown
+ * 
+ * Final Pages: Task Details
+ * - Table of all tasks
+ * - Assignees, dates, status
+ */
+```
+
+### Excel Export Structure
+```typescript
+/**
+ * Excel Export Sheets:
+ * 
+ * Sheet 1: Overview
+ * - Project metadata
+ * - Summary statistics
+ * - Team list
+ * 
+ * Sheet 2: Tasks
+ * - All task details in table format
+ * - Columns: ID, Title, Status, Priority, Start, End, Assignees, Progress
+ * 
+ * Sheet 3: Timeline
+ * - Visual timeline using conditional formatting
+ * - Gantt-style bars using Excel features
+ * 
+ * Sheet 4: Resources
+ * - Team member workload
+ * - Hours allocated vs available
+ * - Utilization percentages
+ */
+```
+
+---
+
+## Critical Implementation Notes
+
+### Security Considerations
+1. **Never trust user input** - Always validate with Zod
+2. **SQL Injection** - Prisma prevents this, but be careful with raw queries
+3. **XSS Prevention** - Sanitize all user-generated content before rendering
+4. **CSRF Protection** - Implement CSRF tokens for state-changing operations
+5. **Rate Limiting** - Implement on all public endpoints
+6. **Password Storage** - Use bcrypt with 12 rounds minimum
+7. **JWT Expiry** - Keep access tokens short-lived (15 min)
+8. **Environment Variables** - Never commit secrets to Git
+
+### Performance Considerations
+1. **Database Indexes** - Index all foreign keys and frequently queried fields
+2. **N+1 Queries** - Use Prisma's `include` to avoid multiple queries
+3. **Pagination** - Implement cursor-based pagination for large datasets
+4. **Caching** - Use Redis for frequently accessed data
+5. **Frontend Optimization** - Use React.memo, useMemo, useCallback appropriately
+6. **Image Optimization** - Compress images before upload
+7. **Bundle Size** - Code-split routes and lazy load components
+8. **API Response Size** - Only return necessary fields
+
+### Gantt Integration Notes
+1. **svar.dev Documentation** - Always refer to official docs
+2. **Data Format** - Ensure task data matches expected format
+3. **Event Handlers** - Implement all necessary event handlers
+4. **Rendering Performance** - Test with large datasets (500+ tasks)
+5. **Zoom Levels** - Implement day, week, month, quarter views
+6. **Drag and Drop** - Implement and test extensively
+7. **Dependency Lines** - Ensure they render correctly
+8. **Color Coding** - Allow customization
+
+---
+
+## Troubleshooting Guide
+
+### Common Issues
+
+**Issue: Docker services won't start**
+- Check if ports are already in use: `lsof -i :5432`
+- Verify .env file exists and has correct values
+- Check Docker logs: `docker-compose logs [service]`
+
+**Issue: Database connection fails**
+- Verify DATABASE_URL in .env
+- Check if PostgreSQL container is healthy: `docker-compose ps`
+- Try resetting: `docker-compose down -v && docker-compose up`
+
+**Issue: JWT tokens not working**
+- Verify JWT_SECRET is set and is at least 32 characters
+- Check token expiry times
+- Verify middleware order in Express
+
+**Issue: CORS errors**
+- Check CORS configuration in backend
+- Verify VITE_API_URL in frontend .env
+- Check if credentials are being sent
+
+**Issue: Tests failing**
+- Run `npm install` in both frontend and backend
+- Check if test database is configured
+- Verify mock data in test fixtures
+
+---
+
+## Final Checklist Before Production
+
+### Security
+- [ ] All environment variables set in production
+- [ ] SSL certificates configured
+- [ ] HTTPS enforced
+- [ ] Rate limiting enabled
+- [ ] Security headers set (helmet.js)
+- [ ] CORS properly configured
+- [ ] SQL injection prevented (using Prisma)
+- [ ] XSS prevention implemented
+- [ ] CSRF protection enabled
+- [ ] Secrets not in code or Git
+
+### Performance
+- [ ] Database indexed properly
+- [ ] Redis caching implemented
+- [ ] API response times < 200ms
+- [ ] Page load times < 2 seconds
+- [ ] Images optimized
+- [ ] Frontend bundle optimized
+- [ ] Lazy loading implemented
+- [ ] CDN configured for static assets
+
+### Testing
+- [ ] Unit tests passing (80%+ coverage)
+- [ ] Integration tests passing
+- [ ] E2E tests passing
+- [ ] Load testing completed
+- [ ] Security scanning completed
+- [ ] No critical vulnerabilities
+
+### Monitoring
+- [ ] Logging configured
+- [ ] Error tracking set up (Sentry, etc.)
+- [ ] Performance monitoring enabled
+- [ ] Database monitoring enabled
+- [ ] Uptime monitoring configured
+- [ ] Alerts set up for critical issues
+
+### Backup & Recovery
+- [ ] Automated database backups configured
+- [ ] Backup retention policy set
+- [ ] Disaster recovery plan documented
+- [ ] Backup restoration tested
+- [ ] Off-site backup storage configured
+
+### Documentation
+- [ ] API documentation complete
+- [ ] Deployment guide written
+- [ ] User guide created
+- [ ] Admin guide created
+- [ ] Troubleshooting guide updated
+
+---
+
+## Success Metrics
+
+Track these metrics to measure project success:
+
+### Technical Metrics
+- Uptime: Target 99.5%+
+- API Response Time: <200ms for 95th percentile
+- Page Load Time: <2 seconds
+- Error Rate: <0.1%
+- Test Coverage: 80%+ backend, 70%+ frontend
+
+### User Metrics (Post-Launch)
+- Daily Active Users
+- Tasks Created per Day
+- Projects Created per Week
+- Export Downloads per Week
+- Average Session Duration
+
+### Development Metrics
+- Code Review Time: <24 hours
+- Bug Fix Time: <48 hours for critical
+- Deployment Frequency: Weekly minimum
+- Failed Deployment Rate: <5%
+
+---
+
+## Conclusion
+
+This guide provides comprehensive instructions for building the project management suite with AI assistance. Each agent has clear responsibilities, rules, and patterns to follow. The phase-by-phase approach ensures systematic development, while quality gates prevent moving forward with technical debt.
+
+**Remember:**
+- NO FAKE DATA - Everything must work with real database operations
+- MODULAR FIRST - Keep components independent and testable
+- SECURITY ALWAYS - Never compromise on security
+- TEST EVERYTHING - Maintain high test coverage
+- DOCUMENT AS YOU GO - Future you will thank present you
+
+Feed this guide to Cursor AI along with specific requests like:
+- "Acting as Backend Agent, implement the auth service"
+- "Acting as Frontend Agent, create the Gantt chart component"
+- "Acting as Database Agent, optimize the task queries"
+
+Good luck building your project management suite! 🚀
