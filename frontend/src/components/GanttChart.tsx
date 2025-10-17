@@ -1,6 +1,6 @@
 import { FC, useEffect, useRef, useState } from 'react';
-import { Gantt } from '@wx/gantt';
-import '@wx/gantt/dist/gantt.css';
+import { Gantt } from 'wx-react-gantt';
+import 'wx-react-gantt/dist/gantt.css';
 import { Task, TaskStatus, TaskPriority, DependencyType } from '../types';
 import { taskApi, CreateTaskData, UpdateTaskData } from '../api/task.api';
 
@@ -10,211 +10,154 @@ interface GanttChartProps {
   onTasksChange: () => void;
 }
 
-// Convert our Task type to Gantt format
+// Gantt task format
 interface GanttTask {
-  id: string;
+  id: string | number;
   text: string;
-  start_date: Date;
-  end_date: Date;
+  start: Date;
+  end: Date;
   duration: number;
   progress: number;
-  parent?: string;
-  type?: string; // 'task', 'project', 'milestone'
+  parent?: string | number;
+  type?: string;
   color?: string;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  assignees?: string[];
+  custom_status?: TaskStatus;
+  custom_priority?: TaskPriority;
 }
 
+// Gantt link format
 interface GanttLink {
-  id: string;
-  source: string;
-  target: string;
-  type: string; // '0' = finish-to-start, '1' = start-to-start, '2' = finish-to-finish, '3' = start-to-finish
-  lag?: number;
+  id: string | number;
+  source: string | number;
+  target: string | number;
+  type: string; // e2s, s2s, e2e, s2e
 }
 
 export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChange }) => {
-  const ganttContainer = useRef<HTMLDivElement>(null);
-  const ganttInstance = useRef<any>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const apiRef = useRef<any>(null);
+  const [ganttTasks, setGanttTasks] = useState<GanttTask[]>([]);
+  const [ganttLinks, setGanttLinks] = useState<GanttLink[]>([]);
 
   // Convert dependency type to Gantt link type
   const dependencyTypeToGanttType = (type: DependencyType): string => {
     switch (type) {
       case DependencyType.FINISH_TO_START:
-        return '0';
+        return 'e2s'; // end-to-start
       case DependencyType.START_TO_START:
-        return '1';
+        return 's2s'; // start-to-start
       case DependencyType.FINISH_TO_FINISH:
-        return '2';
+        return 'e2e'; // end-to-end
       case DependencyType.START_TO_FINISH:
-        return '3';
+        return 's2e'; // start-to-end
       default:
-        return '0';
+        return 'e2s';
     }
   };
 
   // Convert Gantt link type back to our dependency type
   const ganttTypeToDependencyType = (type: string): DependencyType => {
     switch (type) {
-      case '1':
+      case 's2s':
         return DependencyType.START_TO_START;
-      case '2':
+      case 'e2e':
         return DependencyType.FINISH_TO_FINISH;
-      case '3':
+      case 's2e':
         return DependencyType.START_TO_FINISH;
-      case '0':
+      case 'e2s':
       default:
         return DependencyType.FINISH_TO_START;
     }
   };
 
   // Convert our tasks to Gantt format
-  const convertToGanttFormat = (tasks: Task[]): { tasks: GanttTask[]; links: GanttLink[] } => {
-    const ganttTasks: GanttTask[] = tasks.map((task) => ({
+  useEffect(() => {
+    const convertedTasks: GanttTask[] = tasks.map((task) => ({
       id: task.id,
       text: task.title,
-      start_date: new Date(task.startDate),
-      end_date: new Date(task.endDate),
+      start: new Date(task.startDate),
+      end: new Date(task.endDate),
       duration: task.duration || 1,
       progress: (task.progress || 0) / 100, // Gantt expects 0-1
-      parent: task.parentId || undefined,
+      parent: task.parentId,
       type: task.isMilestone ? 'milestone' : 'task',
-      color: task.color || undefined,
-      status: task.status,
-      priority: task.priority,
-      assignees: task.assignees?.map((a) => `${a.user.firstName} ${a.user.lastName}`) || [],
+      color: task.color,
+      custom_status: task.status,
+      custom_priority: task.priority,
     }));
 
-    const ganttLinks: GanttLink[] = [];
+    const convertedLinks: GanttLink[] = [];
     tasks.forEach((task) => {
-      task.dependencies?.forEach((dep, index) => {
-        ganttLinks.push({
-          id: `${task.id}-${dep.dependsOnId}-${index}`,
+      task.dependencies?.forEach((dep) => {
+        convertedLinks.push({
+          id: `${task.id}-${dep.dependsOnId}`,
           source: dep.dependsOnId,
           target: task.id,
           type: dependencyTypeToGanttType(dep.type),
-          lag: dep.lagDays,
         });
       });
     });
 
-    return { tasks: ganttTasks, links: ganttLinks };
-  };
+    setGanttTasks(convertedTasks);
+    setGanttLinks(convertedLinks);
+  }, [tasks]);
 
-  // Initialize Gantt
+  // Setup API event handlers
   useEffect(() => {
-    if (!ganttContainer.current || ganttInstance.current) return;
+    if (!apiRef.current) return;
 
-    // Initialize Gantt instance
-    const gantt = new Gantt(ganttContainer.current, {
-      // Configuration
-      scales: [
-        { unit: 'month', step: 1, format: 'MMMM yyyy' },
-        { unit: 'day', step: 1, format: 'd' },
-      ],
-      columns: [
-        { name: 'text', label: 'Task Name', width: '250px', align: 'left' },
-        { name: 'start_date', label: 'Start', width: '100px', align: 'center' },
-        { name: 'end_date', label: 'End', width: '100px', align: 'center' },
-        { name: 'duration', label: 'Days', width: '60px', align: 'center' },
-        { name: 'progress', label: 'Progress', width: '80px', align: 'center', template: (task: any) => `${Math.round(task.progress * 100)}%` },
-        { name: 'assignees', label: 'Assigned To', width: '150px', align: 'left', template: (task: any) => task.assignees?.join(', ') || 'Unassigned' },
-      ],
-      // Enable features
-      readonly: false,
-      taskTypes: ['task', 'project', 'milestone'],
-      links: true,
-      autoSchedule: true, // Enable auto-scheduling
-      workTime: {
-        hours: [9, 18],
-        days: [1, 2, 3, 4, 5], // Monday-Friday
-      },
-      // Styling
-      cellWidth: 40,
-      cellHeight: 38,
-      minColWidth: 80,
-      baselines: false,
-      markers: [
-        {
-          start_date: new Date(),
-          css: 'today',
-          text: 'Today',
-        },
-      ],
-    });
+    const api = apiRef.current;
 
-    ganttInstance.current = gantt;
-
-    // Load initial data
-    const { tasks: ganttTasks, links: ganttLinks } = convertToGanttFormat(tasks);
-    gantt.parse({ data: ganttTasks, links: ganttLinks });
-
-    // Event handlers
-    gantt.attachEvent('onAfterTaskAdd', async (id: string, task: GanttTask) => {
-      if (isCreating) return; // Prevent duplicate calls
-      setIsCreating(true);
-
+    // Handle task addition
+    api.on('add-task', async (ev: any) => {
       try {
+        const task = ev.task;
         const createData: CreateTaskData = {
           projectId,
-          title: task.text,
-          startDate: task.start_date.toISOString(),
-          endDate: task.end_date.toISOString(),
-          duration: task.duration,
+          title: task.text || 'New Task',
+          startDate: task.start?.toISOString() || new Date().toISOString(),
+          endDate: task.end?.toISOString() || new Date(Date.now() + 86400000).toISOString(),
+          duration: task.duration || 1,
           progress: Math.round((task.progress || 0) * 100),
           parentId: task.parent,
           isMilestone: task.type === 'milestone',
           color: task.color,
         };
 
-        const newTask = await taskApi.createTask(createData);
-
-        // Update the task ID in Gantt
-        gantt.changeTaskId(id, newTask.id);
-
+        await taskApi.createTask(createData);
         onTasksChange();
       } catch (error: any) {
         console.error('Failed to create task:', error);
-        gantt.deleteTask(id);
         alert(error.response?.data?.error || 'Failed to create task');
-      } finally {
-        setIsCreating(false);
       }
     });
 
-    gantt.attachEvent('onAfterTaskUpdate', async (id: string, task: GanttTask) => {
-      if (isUpdating) return;
-      setIsUpdating(true);
-
+    // Handle task update
+    api.on('update-task', async (ev: any) => {
       try {
+        const { id, task } = ev;
         const updateData: UpdateTaskData = {
           title: task.text,
-          startDate: task.start_date.toISOString(),
-          endDate: task.end_date.toISOString(),
+          startDate: task.start?.toISOString(),
+          endDate: task.end?.toISOString(),
           duration: task.duration,
           progress: Math.round((task.progress || 0) * 100),
           isMilestone: task.type === 'milestone',
           color: task.color,
         };
 
-        await taskApi.updateTask(id, updateData);
+        await taskApi.updateTask(String(id), updateData);
         onTasksChange();
       } catch (error: any) {
         console.error('Failed to update task:', error);
         alert(error.response?.data?.error || 'Failed to update task');
-        // Reload data to revert changes
         onTasksChange();
-      } finally {
-        setIsUpdating(false);
       }
     });
 
-    gantt.attachEvent('onAfterTaskDelete', async (id: string) => {
+    // Handle task deletion
+    api.on('delete-task', async (ev: any) => {
       try {
-        await taskApi.deleteTask(id);
+        await taskApi.deleteTask(String(ev.id));
         onTasksChange();
       } catch (error: any) {
         console.error('Failed to delete task:', error);
@@ -223,25 +166,50 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
       }
     });
 
-    gantt.attachEvent('onAfterLinkAdd', async (id: string, link: GanttLink) => {
+    // Handle task move (drag)
+    api.on('move-task', async (ev: any) => {
       try {
-        await taskApi.addDependency(link.target, {
-          dependsOnId: link.source,
+        const { id, task } = ev;
+        const updateData: UpdateTaskData = {
+          startDate: task.start?.toISOString(),
+          endDate: task.end?.toISOString(),
+          duration: task.duration,
+        };
+
+        await taskApi.updateTask(String(id), updateData);
+        onTasksChange();
+      } catch (error: any) {
+        console.error('Failed to move task:', error);
+        alert(error.response?.data?.error || 'Failed to move task');
+        onTasksChange();
+      }
+    });
+
+    // Handle link addition (dependency)
+    api.on('add-link', async (ev: any) => {
+      try {
+        const { link } = ev;
+        await taskApi.addDependency(String(link.target), {
+          dependsOnId: String(link.source),
           type: ganttTypeToDependencyType(link.type),
-          lagDays: link.lag || 0,
+          lagDays: 0,
         });
         onTasksChange();
       } catch (error: any) {
         console.error('Failed to add dependency:', error);
-        gantt.deleteLink(id);
         alert(error.response?.data?.error || 'Failed to add dependency. This might create a circular reference.');
       }
     });
 
-    gantt.attachEvent('onAfterLinkDelete', async (id: string, link: GanttLink) => {
+    // Handle link deletion
+    api.on('delete-link', async (ev: any) => {
       try {
-        await taskApi.removeDependency(link.target, link.source);
-        onTasksChange();
+        const { id } = ev;
+        const link = ganttLinks.find(l => String(l.id) === String(id));
+        if (link) {
+          await taskApi.removeDependency(String(link.target), String(link.source));
+          onTasksChange();
+        }
       } catch (error: any) {
         console.error('Failed to remove dependency:', error);
         alert(error.response?.data?.error || 'Failed to remove dependency');
@@ -249,119 +217,31 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
       }
     });
 
-    gantt.attachEvent('onTaskDblClick', (id: string) => {
-      // Open task edit dialog (can be customized)
-      gantt.showLightbox(id);
-      return true;
-    });
-
-    // Progress drag event
-    gantt.attachEvent('onAfterTaskDrag', async (id: string, mode: string) => {
-      if (mode === 'progress') {
-        const task = gantt.getTask(id);
-        try {
-          await taskApi.updateProgress(id, Math.round(task.progress * 100));
-          onTasksChange();
-        } catch (error: any) {
-          console.error('Failed to update progress:', error);
-          alert(error.response?.data?.error || 'Failed to update progress');
-          onTasksChange();
-        }
-      }
-    });
-
-    // Cleanup
-    return () => {
-      if (ganttInstance.current) {
-        ganttInstance.current.destructor();
-        ganttInstance.current = null;
-      }
-    };
-  }, []);
-
-  // Update Gantt data when tasks change
-  useEffect(() => {
-    if (!ganttInstance.current) return;
-
-    const { tasks: ganttTasks, links: ganttLinks } = convertToGanttFormat(tasks);
-    ganttInstance.current.clearAll();
-    ganttInstance.current.parse({ data: ganttTasks, links: ganttLinks });
-  }, [tasks]);
+  }, [apiRef.current, projectId, ganttLinks]);
 
   return (
     <div className="gantt-container">
-      <div className="gantt-toolbar bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <button
-            className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
-            onClick={() => ganttInstance.current?.createTask()}
-          >
-            + Add Task
-          </button>
-          <button
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-            onClick={() => ganttInstance.current?.render()}
-          >
-            Refresh
-          </button>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Zoom:</span>
-            <button
-              className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
-              onClick={() => ganttInstance.current?.ext.zoom.zoomIn()}
-            >
-              +
-            </button>
-            <button
-              className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
-              onClick={() => ganttInstance.current?.ext.zoom.zoomOut()}
-            >
-              -
-            </button>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">View:</span>
-            <select
-              className="px-3 py-1 border border-gray-300 rounded text-sm"
-              onChange={(e) => {
-                const scales: any = {
-                  day: [
-                    { unit: 'day', step: 1, format: 'dd MMM' },
-                    { unit: 'hour', step: 1, format: 'HH' },
-                  ],
-                  week: [
-                    { unit: 'week', step: 1, format: 'Week #W' },
-                    { unit: 'day', step: 1, format: 'dd' },
-                  ],
-                  month: [
-                    { unit: 'month', step: 1, format: 'MMMM yyyy' },
-                    { unit: 'day', step: 1, format: 'd' },
-                  ],
-                  quarter: [
-                    { unit: 'quarter', step: 1, format: 'Q yyyy' },
-                    { unit: 'month', step: 1, format: 'MMM' },
-                  ],
-                };
-                ganttInstance.current?.config.scales = scales[e.target.value];
-                ganttInstance.current?.render();
-              }}
-            >
-              <option value="day">Day</option>
-              <option value="week">Week</option>
-              <option value="month" selected>Month</option>
-              <option value="quarter">Quarter</option>
-            </select>
-          </div>
-        </div>
+      <div className="gantt-wrapper" style={{ width: '100%', height: '600px', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+        <Gantt
+          tasks={ganttTasks}
+          links={ganttLinks}
+          apiRef={apiRef}
+          scales={[
+            { unit: 'month', step: 1, format: 'MMMM yyyy' },
+            { unit: 'day', step: 1, format: 'd' },
+          ]}
+          columns={[
+            { id: 'text', label: 'Task Name', width: 250 },
+            { id: 'start', label: 'Start', width: 100 },
+            { id: 'end', label: 'End', width: 100 },
+            { id: 'duration', label: 'Days', width: 60 },
+          ]}
+        />
       </div>
-      <div ref={ganttContainer} style={{ width: '100%', height: '600px' }} />
 
       <style>{`
-        .gantt_task_line.today {
-          background-color: #ff0000;
-          opacity: 0.3;
+        .gantt-container {
+          width: 100%;
         }
 
         .gantt_task_line.milestone {
