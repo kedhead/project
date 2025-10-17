@@ -116,12 +116,34 @@ export enum TaskPriority {
   CRITICAL = 'CRITICAL',
 }
 
+export enum DependencyType {
+  FINISH_TO_START = 'FINISH_TO_START',
+  START_TO_START = 'START_TO_START',
+  FINISH_TO_FINISH = 'FINISH_TO_FINISH',
+  START_TO_FINISH = 'START_TO_FINISH',
+}
+
 export interface TaskAssignee {
   id: string;
   taskId: string;
   userId: string;
   assignedAt: string;
   user: User;
+}
+
+export interface TaskDependency {
+  id: string;
+  taskId: string;
+  dependsOnId: string;
+  type: DependencyType;
+  lagDays: number;
+  dependsOn: {
+    id: string;
+    title: string;
+    status: TaskStatus;
+    startDate: string;
+    endDate: string;
+  };
 }
 
 export interface Task {
@@ -131,14 +153,28 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   projectId: string;
-  startDate?: string;
-  endDate?: string;
-  duration?: number;
-  progress?: number;
+  parentId?: string;
+  startDate: string;
+  endDate: string;
+  duration: number;
+  progress: number;
+  color?: string;
+  isMilestone: boolean;
+  isLocked: boolean;
   createdAt: string;
   updatedAt: string;
   project?: Project;
   assignees?: TaskAssignee[];
+  dependencies?: TaskDependency[];
+  parent?: {
+    id: string;
+    title: string;
+  };
+  subtasks?: {
+    id: string;
+    title: string;
+    status: TaskStatus;
+  }[];
 }
 
 // API Response Types
