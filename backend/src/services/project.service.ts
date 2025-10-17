@@ -214,12 +214,16 @@ export class ProjectService {
         },
         tasks: {
           include: {
-            assignedTo: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
+            assignees: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
               },
             },
             dependencies: {
