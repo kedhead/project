@@ -1,7 +1,7 @@
 # Project Checkpoint - Session Recovery Document
 
 **Date:** 2025-10-17
-**Status:** Phase 1 Complete - Authentication Working
+**Status:** Phase 2 Complete - Teams & Projects APIs Working
 **VPS:** 107.173.91.179
 **GitHub:** https://github.com/kedhead/project
 
@@ -11,7 +11,7 @@
 
 ### ✅ Completed Features
 
-1. **Authentication System**
+1. **Authentication System (Phase 1)**
    - User registration working (POST /api/auth/register)
    - User login working (POST /api/auth/login)
    - JWT token-based authentication
@@ -19,7 +19,16 @@
    - Refresh token mechanism (15m access, 7d refresh)
    - Protected routes on frontend
 
-2. **Infrastructure**
+2. **Teams & Projects Management (Phase 2)**
+   - Complete Teams CRUD API
+   - Team member management (add, remove, update roles)
+   - Permission-based access control (OWNER, ADMIN, MEMBER)
+   - Complete Projects CRUD API
+   - Project statistics endpoint
+   - Team-project association
+   - All APIs protected with JWT authentication
+
+3. **Infrastructure**
    - Docker Compose setup with all services running
    - PostgreSQL database with complete schema
    - Redis cache server
@@ -27,11 +36,12 @@
    - Node.js backend (Express + TypeScript)
    - React frontend (Vite + TypeScript + TailwindCSS)
 
-3. **Database**
+4. **Database**
    - Prisma ORM configured
    - Complete schema migrated to PostgreSQL
-   - Tables: User, Team, Project, Task, TaskDependency
+   - Tables: User, Team, Project, Task, TaskDependency, TeamMember, RefreshToken
    - Enums: UserRole, TeamRole, TaskStatus, TaskPriority, DependencyType
+   - All relations and cascading deletes configured
 
 ---
 
@@ -120,15 +130,22 @@ K:\AI-Projects\ProjectManager/
 ├── backend/
 │   ├── src/
 │   │   ├── controllers/
-│   │   │   └── auth.controller.ts
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── team.controller.ts (NEW - Phase 2)
+│   │   │   └── project.controller.ts (NEW - Phase 2)
 │   │   ├── middleware/
-│   │   │   ├── auth.middleware.ts
-│   │   │   ├── error.middleware.ts
-│   │   │   └── logging.middleware.ts
+│   │   │   ├── authenticate.ts
+│   │   │   ├── authorize.ts
+│   │   │   ├── errorHandler.ts
+│   │   │   └── rateLimiter.ts
 │   │   ├── routes/
-│   │   │   └── auth.routes.ts
+│   │   │   ├── auth.routes.ts
+│   │   │   ├── team.routes.ts (NEW - Phase 2)
+│   │   │   └── project.routes.ts (NEW - Phase 2)
 │   │   ├── services/
-│   │   │   └── auth.service.ts
+│   │   │   ├── auth.service.ts
+│   │   │   ├── team.service.ts (NEW - Phase 2)
+│   │   │   └── project.service.ts (NEW - Phase 2)
 │   │   ├── utils/
 │   │   │   ├── jwt.util.ts
 │   │   │   ├── logger.util.ts
@@ -177,6 +194,25 @@ K:\AI-Projects\ProjectManager/
 - `POST /api/auth/login` - Login and get JWT tokens
 - `POST /api/auth/logout` - Logout (clear refresh token)
 - `POST /api/auth/refresh` - Refresh access token
+
+### Teams (NEW - Phase 2)
+- `POST /api/teams` - Create team (auto-assigns creator as OWNER)
+- `GET /api/teams` - List all teams for authenticated user
+- `GET /api/teams/:id` - Get team details with members and projects
+- `PUT /api/teams/:id` - Update team (OWNER/ADMIN only)
+- `DELETE /api/teams/:id` - Delete team (OWNER only)
+- `POST /api/teams/:id/members` - Add member to team (OWNER/ADMIN only)
+- `DELETE /api/teams/:id/members/:userId` - Remove member (OWNER/ADMIN only)
+- `PUT /api/teams/:id/members/:userId` - Update member role (OWNER only)
+- `GET /api/teams/:teamId/projects` - List projects for a specific team
+
+### Projects (NEW - Phase 2)
+- `POST /api/projects` - Create project in a team (OWNER/ADMIN only)
+- `GET /api/projects` - List all projects for authenticated user
+- `GET /api/projects/:id` - Get project details with tasks
+- `PUT /api/projects/:id` - Update project (OWNER/ADMIN only)
+- `DELETE /api/projects/:id` - Delete project (OWNER/ADMIN only)
+- `GET /api/projects/:id/stats` - Get project statistics
 
 ### Health
 - `GET /health` - Server health check
@@ -278,43 +314,46 @@ ssh root@107.173.91.179 "docker exec -it project-management-backend-1 npx prisma
 
 ---
 
-## Next Steps (Phase 2 - Teams & Projects)
+## Next Steps (Phase 3 - Frontend UI)
 
-### Backend Tasks
-1. Create Team endpoints
-   - POST /api/teams - Create team
-   - GET /api/teams - List user's teams
-   - GET /api/teams/:id - Get team details
-   - PUT /api/teams/:id - Update team
-   - DELETE /api/teams/:id - Delete team
+### Frontend Tasks (IN PROGRESS)
+1. **Dashboard Page**
+   - Overview of teams and projects
+   - Quick stats display
+   - Recent activity feed
 
-2. Create Team Member endpoints
-   - POST /api/teams/:id/members - Add member
-   - DELETE /api/teams/:id/members/:userId - Remove member
-   - PUT /api/teams/:id/members/:userId - Update role
+2. **Teams Management UI**
+   - TeamList component - Display all teams
+   - TeamDetail component - Show team members and projects
+   - CreateTeam modal/form
+   - AddMember modal/form
+   - Team settings and permissions UI
 
-3. Create Project endpoints
-   - POST /api/projects - Create project
-   - GET /api/projects - List projects
-   - GET /api/projects/:id - Get project details
-   - PUT /api/projects/:id - Update project
-   - DELETE /api/projects/:id - Delete project
+3. **Projects Management UI**
+   - ProjectList component - Display all projects
+   - ProjectDetail component - Show project tasks and stats
+   - CreateProject modal/form
+   - Project card components
+   - Project filters and search
 
-### Frontend Tasks
-1. Dashboard page
-2. Teams management UI
-3. Projects management UI
-4. Navigation components
+4. **Navigation & Layout**
+   - Main navigation bar
+   - Sidebar with team/project navigation
+   - Breadcrumbs
+   - User menu with logout
 
 ### Files to Create
-- `backend/src/controllers/team.controller.ts`
-- `backend/src/controllers/project.controller.ts`
-- `backend/src/services/team.service.ts`
-- `backend/src/services/project.service.ts`
-- `backend/src/routes/team.routes.ts`
-- `backend/src/routes/project.routes.ts`
+- `frontend/src/api/team.api.ts` - Team API client functions
+- `frontend/src/api/project.api.ts` - Project API client functions
+- `frontend/src/components/dashboard/Dashboard.tsx`
 - `frontend/src/components/teams/TeamList.tsx`
+- `frontend/src/components/teams/TeamDetail.tsx`
+- `frontend/src/components/teams/CreateTeamModal.tsx`
 - `frontend/src/components/projects/ProjectList.tsx`
+- `frontend/src/components/projects/ProjectDetail.tsx`
+- `frontend/src/components/projects/CreateProjectModal.tsx`
+- `frontend/src/components/layout/Navbar.tsx`
+- `frontend/src/components/layout/Sidebar.tsx`
 
 ---
 
@@ -332,7 +371,7 @@ ssh root@107.173.91.179 "docker exec -it project-management-postgres-1 psql -U p
 
 **When resuming this session, tell the AI:**
 
-"We're continuing the project management suite development. Please read CHECKPOINT.md. We just completed Phase 1 (Authentication). Registration and login are working. The application is deployed on VPS at 107.173.91.179. We're ready to start Phase 2 - Teams & Projects management."
+"We're continuing the project management suite development. Please read CHECKPOINT.md. We just completed Phase 2 (Teams & Projects Backend APIs). The backend APIs are working and deployed on VPS at 107.173.91.179. We're ready to start Phase 3 - Frontend UI for Teams and Projects."
 
 **Verification Steps:**
 1. Check services are running: `docker compose ps`

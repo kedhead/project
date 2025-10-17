@@ -16,7 +16,13 @@
       "Bash(ssh root@107.173.91.179 \"docker compose version 2>&1 || docker-compose --version 2>&1 || echo ''Docker Compose not installed''\")",
       "Bash(ssh root@107.173.91.179 \"cd /var/www/project-management && ls -la && echo ''---CHECKING DOCKER FILES---'' && ls -la docker/ && echo ''---CHECKING BACKEND---'' && ls backend/ && echo ''---CHECKING FRONTEND---'' && ls frontend/\")",
       "Bash(ssh root@107.173.91.179:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(awk:*)",
+      "Bash(find:*)",
+      "Bash(for file in services/*.ts controllers/*.ts routes/*.ts)",
+      "Bash(do sed -i \"s/\\.js''/''/\" \"$file\")",
+      "Bash(echo:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
