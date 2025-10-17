@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: node:20-slim
+    image: node:20
     working_dir: /app
     environment:
       NODE_ENV: development
