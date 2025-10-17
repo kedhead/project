@@ -15,18 +15,16 @@ enum UserRole {
 }
 
 enum TeamRole {
+  OWNER
   ADMIN
-  MANAGER
   MEMBER
-  VIEWER
 }
 
 enum TaskStatus {
-  NOT_STARTED
+  TODO
   IN_PROGRESS
-  COMPLETED
   BLOCKED
-  ON_HOLD
+  COMPLETED
 }
 
 enum TaskPriority {
@@ -62,6 +60,7 @@ model User {
   createdTasks     Task[]         @relation("TaskCreator")
   assignedTasks    TaskAssignee[]
   teamMemberships  TeamMember[]
+  createdTeams     Team[]         @relation("TeamCreator")
   createdProjects  Project[]      @relation("ProjectCreator")
   refreshTokens    RefreshToken[]
   notifications    Notification[]
@@ -93,13 +92,16 @@ model Team {
   avatar      String?
   color       String?  // For color-coding in Gantt
 
+  createdById String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  members  TeamMember[]
-  projects ProjectTeam[]
+  createdBy User           @relation("TeamCreator", fields: [createdById], references: [id])
+  members   TeamMember[]
+  projects  Project[]
 
+  @@index([createdById])
   @@map("teams")
 }
 
@@ -123,39 +125,26 @@ model Project {
   id          String    @id @default(uuid())
   name        String
   description String?
-  startDate   DateTime
-  endDate     DateTime
+  startDate   DateTime?
+  endDate     DateTime?
   budget      Float?
   status      String    @default("ACTIVE")
   color       String?
 
+  teamId      String
   createdById String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   // Relations
-  createdBy User          @relation("ProjectCreator", fields: [createdById], references: [id])
-  teams     ProjectTeam[]
+  team      Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("ProjectCreator", fields: [createdById], references: [id])
   tasks     Task[]
 
+  @@index([teamId])
   @@index([createdById])
   @@index([status])
   @@map("projects")
-}
-
-model ProjectTeam {
-  id        String   @id @default(uuid())
-  projectId String
-  teamId    String
-  addedAt   DateTime @default(now())
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  team    Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
-
-  @@unique([projectId, teamId])
-  @@index([projectId])
-  @@index([teamId])
-  @@map("project_teams")
 }
 
 model Task {
@@ -170,7 +159,7 @@ model Task {
   duration    Int          // In days
   progress    Int          @default(0) // 0-100
 
-  status      TaskStatus   @default(NOT_STARTED)
+  status      TaskStatus   @default(TODO)
   priority    TaskPriority @default(MEDIUM)
   color       String?      // Custom color override
   isLocked    Boolean      @default(false) // Prevent auto-scheduling
