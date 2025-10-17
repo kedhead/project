@@ -8,16 +8,16 @@ const prisma = new PrismaClient();
 export const createProjectSchema = z.object({
   teamId: z.string().uuid('Invalid team ID'),
   name: z.string().min(1, 'Project name is required').max(200),
-  description: z.string().max(1000).optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  description: z.string().max(1000).optional().or(z.literal('')),
+  startDate: z.string().datetime().optional().or(z.literal('')),
+  endDate: z.string().datetime().optional().or(z.literal('')),
 });
 
 export const updateProjectSchema = z.object({
   name: z.string().min(1).max(200).optional(),
-  description: z.string().max(1000).optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  description: z.string().max(1000).optional().or(z.literal('')),
+  startDate: z.string().datetime().optional().or(z.literal('')),
+  endDate: z.string().datetime().optional().or(z.literal('')),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
@@ -52,9 +52,9 @@ export class ProjectService {
     const project = await prisma.project.create({
       data: {
         name: data.name,
-        description: data.description,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        description: data.description || undefined,
+        startDate: data.startDate && data.startDate !== '' ? new Date(data.startDate) : undefined,
+        endDate: data.endDate && data.endDate !== '' ? new Date(data.endDate) : undefined,
         teamId: data.teamId,
         createdById: creatorId,
       },
@@ -303,9 +303,9 @@ export class ProjectService {
       where: { id: projectId },
       data: {
         name: data.name,
-        description: data.description,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        description: data.description || undefined,
+        startDate: data.startDate && data.startDate !== '' ? new Date(data.startDate) : undefined,
+        endDate: data.endDate && data.endDate !== '' ? new Date(data.endDate) : undefined,
       },
       include: {
         team: {
