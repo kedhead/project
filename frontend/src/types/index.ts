@@ -116,6 +116,14 @@ export enum TaskPriority {
   CRITICAL = 'CRITICAL',
 }
 
+export interface TaskAssignee {
+  id: string;
+  taskId: string;
+  userId: string;
+  assignedAt: string;
+  user: User;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -123,15 +131,14 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   projectId: string;
-  assignedToId?: string;
   startDate?: string;
-  dueDate?: string;
-  estimatedHours?: number;
-  actualHours?: number;
+  endDate?: string;
+  duration?: number;
+  progress?: number;
   createdAt: string;
   updatedAt: string;
   project?: Project;
-  assignedTo?: User;
+  assignees?: TaskAssignee[];
 }
 
 // API Response Types

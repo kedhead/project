@@ -257,11 +257,34 @@ export const ProjectDetailPage: FC = () => {
                       </span>
                     </div>
                   </div>
-                  {task.dueDate && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Due: {new Date(task.dueDate).toLocaleDateString()}
-                    </p>
-                  )}
+                  <div className="flex items-center justify-between mt-3">
+                    {task.assignees && task.assignees.length > 0 && (
+                      <div className="flex items-center space-x-1">
+                        <span className="text-xs text-gray-500">Assigned to:</span>
+                        <div className="flex -space-x-2">
+                          {task.assignees.slice(0, 3).map((assignee) => (
+                            <div
+                              key={assignee.id}
+                              className="w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-medium border-2 border-white"
+                              title={`${assignee.user.firstName} ${assignee.user.lastName}`}
+                            >
+                              {assignee.user.firstName[0]}{assignee.user.lastName[0]}
+                            </div>
+                          ))}
+                          {task.assignees.length > 3 && (
+                            <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center text-xs font-medium border-2 border-white">
+                              +{task.assignees.length - 3}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {task.endDate && (
+                      <p className="text-xs text-gray-500">
+                        Due: {new Date(task.endDate).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
