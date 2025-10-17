@@ -8,7 +8,15 @@
       "Bash(git commit:*)",
       "Bash(git remote add:*)",
       "Bash(git branch:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(ssh root@107.173.91.179 -o StrictHostKeyChecking=no \"whoami && pwd\")",
+      "Bash(ssh root@107.173.91.179 \"mkdir -p /var/www && cd /var/www && rm -rf project-management && git clone https://github.com/kedhead/project.git project-management && ls -la project-management\")",
+      "Bash(ssh root@107.173.91.179 \"cat > /var/www/project-management/.env << ''ENVEOF''\n# Database\nDB_USER=pmuser\nDB_PASSWORD=SecurePass2024!ProjMgmt\nDB_NAME=pmdb\nDATABASE_URL=postgresql://pmuser:SecurePass2024!ProjMgmt@postgres:5432/pmdb\n\n# Redis\nREDIS_PASSWORD=RedisSecure2024!Cache\nREDIS_URL=redis://:RedisSecure2024!Cache@redis:6379\n\n# JWT Secrets\nJWT_SECRET=b3JnYW5pemF0aW9uX3Byb2plY3RfbWFuYWdlbWVudF9qd3Rfc2VjcmV0XzIwMjRfc3VwZXJfc2VjdXJl\nJWT_REFRESH_SECRET=cmVmcmVzaF90b2tlbl9zZWNyZXRfZm9yX3Byb2plY3RfbWFuYWdlbWVudF9zeXN0ZW1fMjAyNF9zZWN1cmU=\nJWT_EXPIRY=15m\nJWT_REFRESH_EXPIRY=7d\n\n# API Configuration\nNODE_ENV=production\nPORT=4000\nAPI_URL=http://107.173.91.179\nFRONTEND_URL=http://107.173.91.179\n\n# Frontend\nVITE_API_URL=http://107.173.91.179/api\n\n# VPS Configuration\nVPS_IP=107.173.91.179\nVPS_USER=root\nENVEOF\ncat /var/www/project-management/.env\")",
+      "Bash(ssh root@107.173.91.179 \"docker --version 2>&1 || echo ''Docker not installed''\")",
+      "Bash(ssh root@107.173.91.179 \"docker compose version 2>&1 || docker-compose --version 2>&1 || echo ''Docker Compose not installed''\")",
+      "Bash(ssh root@107.173.91.179 \"cd /var/www/project-management && ls -la && echo ''---CHECKING DOCKER FILES---'' && ls -la docker/ && echo ''---CHECKING BACKEND---'' && ls backend/ && echo ''---CHECKING FRONTEND---'' && ls frontend/\")",
+      "Bash(ssh root@107.173.91.179:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
