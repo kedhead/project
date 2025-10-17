@@ -38,6 +38,53 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
   const [ganttTasks, setGanttTasks] = useState<GanttTask[]>([]);
   const [ganttLinks, setGanttLinks] = useState<GanttLink[]>([]);
 
+  // Toolbar items configuration
+  const toolbarItems = [
+    {
+      id: 'add-task',
+      comp: 'button',
+      icon: 'wxi-plus',
+      text: 'Add Task',
+      type: 'primary',
+    },
+    {
+      id: 'delete-task',
+      comp: 'button',
+      icon: 'wxi-delete',
+      text: 'Delete',
+    },
+    {
+      type: 'separator',
+    },
+    {
+      id: 'indent-task',
+      comp: 'button',
+      icon: 'wxi-indent',
+      text: 'Indent',
+    },
+    {
+      id: 'unindent-task',
+      comp: 'button',
+      icon: 'wxi-unindent',
+      text: 'Unindent',
+    },
+    {
+      type: 'separator',
+    },
+    {
+      id: 'zoom-in',
+      comp: 'button',
+      icon: 'wxi-plus',
+      text: 'Zoom In',
+    },
+    {
+      id: 'zoom-out',
+      comp: 'button',
+      icon: 'wxi-minus',
+      text: 'Zoom Out',
+    },
+  ];
+
   // Convert dependency type to Gantt link type
   const dependencyTypeToGanttType = (type: DependencyType): string => {
     switch (type) {
@@ -221,8 +268,9 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
 
   return (
     <div className="gantt-container">
+      <link rel="stylesheet" href="https://cdn.svar.dev/fonts/wxi/wx-icons.css" />
       <div className="gantt-wrapper" style={{ width: '100%', height: '700px', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
-        <Toolbar api={apiRef.current} />
+        <Toolbar api={apiRef.current} items={toolbarItems} />
         <Gantt
           tasks={ganttTasks}
           links={ganttLinks}
