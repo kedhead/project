@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { TeamService, createTeamSchema, updateTeamSchema, addMemberSchema, updateMemberRoleSchema } from '../services/team.service.js';
-import { logger } from '../utils/logger.util.js';
+import { TeamService, createTeamSchema, updateTeamSchema, addMemberSchema, updateMemberRoleSchema } from '../services/team.service';
+import { logger } from '../utils/logger.util';
 
 const teamService = new TeamService();
 

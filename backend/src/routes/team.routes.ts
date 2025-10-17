@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { TeamController } from '../controllers/team.controller.js';
-import { ProjectController } from '../controllers/project.controller.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
+import { TeamController } from '../controllers/team.controller';
+import { ProjectController } from '../controllers/project.controller';
+import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
 const teamController = new TeamController();

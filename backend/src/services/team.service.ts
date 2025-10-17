@@ -1,6 +1,6 @@
 import { PrismaClient, Team, TeamRole, TeamMember } from '@prisma/client';
 import { z } from 'zod';
-import { logger } from '../utils/logger.util.js';
+import { logger } from '../utils/logger.util';
 
 const prisma = new PrismaClient();
 

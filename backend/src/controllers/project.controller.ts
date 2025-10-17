@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { ProjectService, createProjectSchema, updateProjectSchema } from '../services/project.service.js';
-import { logger } from '../utils/logger.util.js';
+import { ProjectService, createProjectSchema, updateProjectSchema } from '../services/project.service';
+import { logger } from '../utils/logger.util';
 
 const projectService = new ProjectService();
 
