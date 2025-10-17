@@ -8,6 +8,7 @@ import { apiLimiter } from './middleware/rateLimiter';
 import authRoutes from './routes/auth.routes';
 import teamRoutes from './routes/team.routes';
 import projectRoutes from './routes/project.routes';
+import taskRoutes from './routes/task.routes';
 
 // Load environment variables
 dotenv.config();
@@ -45,9 +46,7 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/projects', projectRoutes);
-// More routes will be added here
-// app.use('/api/users', userRoutes);
-// app.use('/api/tasks', taskRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

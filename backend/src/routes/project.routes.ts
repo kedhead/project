@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ProjectController } from '../controllers/project.controller';
+import { taskController } from '../controllers/task.controller';
 import { authenticate } from '../middleware/authenticate';
 
 const router = Router();
@@ -17,5 +18,8 @@ router.delete('/:id', (req, res) => projectController.deleteProject(req, res));
 
 // Project statistics
 router.get('/:id/stats', (req, res) => projectController.getProjectStats(req, res));
+
+// Project tasks
+router.get('/:projectId/tasks', (req, res) => taskController.getProjectTasks(req, res));
 
 export default router;
