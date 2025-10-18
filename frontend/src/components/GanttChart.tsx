@@ -135,15 +135,15 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     const handleUpdateTask = async (ev: any) => {
       try {
         const { id, task } = ev;
-        const updateData: UpdateTaskData = {
-          title: task.text,
-          startDate: task.start?.toISOString(),
-          endDate: task.end?.toISOString(),
-          duration: task.duration,
-          progress: Math.round((task.progress || 0) * 100),
-          isMilestone: task.type === 'milestone',
-          color: task.color,
-        };
+        const updateData: UpdateTaskData = {};
+
+        if (task.text) updateData.title = task.text;
+        if (task.start) updateData.startDate = task.start.toISOString();
+        if (task.end) updateData.endDate = task.end.toISOString();
+        if (task.duration !== undefined) updateData.duration = task.duration;
+        if (task.progress !== undefined) updateData.progress = Math.round((task.progress || 0) * 100);
+        if (task.type !== undefined) updateData.isMilestone = task.type === 'milestone';
+        if (task.color) updateData.color = task.color;
 
         await taskApi.updateTask(String(id), updateData);
         onTasksChange();
@@ -170,11 +170,11 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     const handleMoveTask = async (ev: any) => {
       try {
         const { id, task } = ev;
-        const updateData: UpdateTaskData = {
-          startDate: task.start?.toISOString(),
-          endDate: task.end?.toISOString(),
-          duration: task.duration,
-        };
+        const updateData: UpdateTaskData = {};
+
+        if (task.start) updateData.startDate = task.start.toISOString();
+        if (task.end) updateData.endDate = task.end.toISOString();
+        if (task.duration !== undefined) updateData.duration = task.duration;
 
         await taskApi.updateTask(String(id), updateData);
         onTasksChange();
