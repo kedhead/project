@@ -224,16 +224,7 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     api.on('add-link', handleAddLink);
     api.on('delete-link', handleDeleteLink);
 
-    // Cleanup function to remove event listeners
-    return () => {
-      api.off('add-task', handleAddTask);
-      api.off('update-task', handleUpdateTask);
-      api.off('delete-task', handleDeleteTask);
-      api.off('move-task', handleMoveTask);
-      api.off('add-link', handleAddLink);
-      api.off('delete-link', handleDeleteLink);
-    };
-  }, [apiRef.current, projectId, ganttLinks]);
+  }, [apiRef.current]);
 
   return (
     <div className="gantt-container">
