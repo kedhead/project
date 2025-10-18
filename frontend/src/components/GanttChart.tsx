@@ -1,5 +1,5 @@
 import { FC, useEffect, useRef, useState } from 'react';
-import { Gantt, Toolbar } from 'wx-react-gantt';
+import { Gantt, Toolbar, defaultEditorShape } from 'wx-react-gantt';
 import 'wx-react-gantt/dist/gantt.css';
 import { Task, TaskStatus, TaskPriority, DependencyType } from '../types';
 import { taskApi, CreateTaskData, UpdateTaskData } from '../api/task.api';
@@ -228,15 +228,49 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
 
   }, [apiRef.current]);
 
+  // Configure editor shape
+  const editorShape = [
+    {
+      key: "text",
+      type: "text",
+      label: "Task Name",
+      config: {
+        placeholder: "Enter task name",
+        focus: true,
+      },
+    },
+    {
+      key: "start",
+      type: "date",
+      label: "Start Date",
+    },
+    {
+      key: "end",
+      type: "date",
+      label: "End Date",
+    },
+    {
+      key: "duration",
+      type: "counter",
+      label: "Duration (days)",
+    },
+    {
+      key: "progress",
+      type: "slider",
+      label: "Progress (%)",
+    },
+  ];
+
   return (
     <div className="gantt-container">
       <link rel="stylesheet" href="https://cdn.svar.dev/fonts/wxi/wx-icons.css" />
-      <div className="gantt-wrapper" style={{ width: '100%', height: '750px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+      <div className="gantt-wrapper">
         <Toolbar api={apiRef.current} />
         <Gantt
           init={(api) => (apiRef.current = api)}
           tasks={ganttTasks}
           links={ganttLinks}
+          editorShape={editorShape}
           scales={[
             { unit: 'month', step: 1, format: 'MMMM yyyy' },
             { unit: 'day', step: 1, format: 'd' },
@@ -248,8 +282,8 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
             { id: 'duration', label: 'Days', width: 60, align: 'center' },
           ]}
           cellWidth={50}
-          cellHeight={38}
-          scaleHeight={50}
+          cellHeight={42}
+          scaleHeight={54}
           readonly={false}
         />
       </div>
@@ -257,85 +291,224 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
       <style>{`
         .gantt-container {
           width: 100%;
+          height: 800px;
+          display: flex;
+          flex-direction: column;
         }
 
         .gantt-wrapper {
           display: flex;
           flex-direction: column;
+          height: 100%;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          overflow: hidden;
+          background: white;
         }
 
         /* Toolbar styling */
         .wx-toolbar {
           background-color: #ffffff;
           border-bottom: 1px solid #e5e7eb;
-          padding: 8px 12px;
-          min-height: 48px;
-          display: flex;
+          padding: 12px 16px !important;
+          min-height: 60px !important;
+          display: flex !important;
           align-items: center;
           gap: 8px;
           flex-shrink: 0;
-          z-index: 10;
+          z-index: 100;
         }
 
         .wx-toolbar button {
-          background-color: #ffffff;
-          border: 1px solid #d1d5db;
-          border-radius: 6px;
-          padding: 6px 12px;
-          cursor: pointer;
-          font-size: 14px;
-          color: #374151;
-          transition: all 0.2s;
+          background-color: #ffffff !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 6px !important;
+          padding: 8px 16px !important;
+          cursor: pointer !important;
+          font-size: 14px !important;
+          color: #374151 !important;
+          transition: all 0.2s !important;
+          font-weight: 500 !important;
+          height: auto !important;
+          min-height: 36px !important;
         }
 
         .wx-toolbar button:hover {
-          background-color: #f9fafb;
-          border-color: #9ca3af;
+          background-color: #f9fafb !important;
+          border-color: #9ca3af !important;
         }
 
         .wx-toolbar button:active {
-          background-color: #f3f4f6;
+          background-color: #f3f4f6 !important;
+        }
+
+        .wx-toolbar button.wx-primary {
+          background-color: #3b82f6 !important;
+          color: white !important;
+          border-color: #3b82f6 !important;
+        }
+
+        .wx-toolbar button.wx-primary:hover {
+          background-color: #2563eb !important;
+          border-color: #2563eb !important;
+        }
+
+        /* Gantt main container */
+        .wx-gantt {
+          flex: 1;
+          overflow: hidden;
         }
 
         /* Task styling */
-        .gantt_task_line.milestone {
-          background-color: #fbbf24;
+        .wx-bar {
+          border-radius: 4px !important;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
         }
 
-        .gantt_task_line {
-          cursor: pointer;
+        .wx-bar:hover {
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
         }
 
-        .gantt_task_line:hover {
-          opacity: 0.9;
-        }
-
-        .gantt_link_arrow {
-          cursor: pointer;
+        .wx-bar.wx-milestone {
+          background-color: #fbbf24 !important;
         }
 
         /* Grid styling */
-        .gantt_grid_scale {
-          background-color: #f9fafb;
-          border-bottom: 2px solid #e5e7eb;
+        .wx-grid-header {
+          background-color: #f9fafb !important;
+          border-bottom: 2px solid #e5e7eb !important;
+          font-weight: 600 !important;
+          color: #374151 !important;
         }
 
-        .gantt_grid_head_cell {
-          font-weight: 600;
-          color: #374151;
+        .wx-grid-row:hover {
+          background-color: #f9fafb !important;
         }
 
-        .gantt_scale_line {
-          border-top: 1px solid #e5e7eb;
-          background-color: #f3f4f6;
+        /* Scale/Timeline styling */
+        .wx-scale {
+          background-color: #f3f4f6 !important;
+          border-bottom: 1px solid #e5e7eb !important;
         }
 
-        .gantt_task {
-          border-radius: 4px;
+        .wx-scale-cell {
+          font-weight: 500 !important;
+          color: #374151 !important;
         }
 
-        .gantt_task_progress {
-          background-color: rgba(59, 130, 246, 0.3);
+        /* Editor/Modal styling */
+        .wx-modal {
+          z-index: 1000 !important;
+        }
+
+        .wx-modal-content {
+          border-radius: 12px !important;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+          max-width: 500px !important;
+        }
+
+        .wx-modal-header {
+          padding: 20px 24px !important;
+          border-bottom: 1px solid #e5e7eb !important;
+          font-size: 18px !important;
+          font-weight: 600 !important;
+          color: #111827 !important;
+        }
+
+        .wx-modal-body {
+          padding: 24px !important;
+        }
+
+        .wx-modal-footer {
+          padding: 16px 24px !important;
+          border-top: 1px solid #e5e7eb !important;
+          display: flex !important;
+          gap: 12px !important;
+          justify-content: flex-end !important;
+        }
+
+        /* Form fields in editor */
+        .wx-field {
+          margin-bottom: 20px !important;
+        }
+
+        .wx-field label {
+          display: block !important;
+          margin-bottom: 6px !important;
+          font-weight: 500 !important;
+          color: #374151 !important;
+          font-size: 14px !important;
+        }
+
+        .wx-field input[type="text"],
+        .wx-field input[type="date"],
+        .wx-field input[type="number"],
+        .wx-field textarea {
+          width: 100% !important;
+          padding: 10px 12px !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 6px !important;
+          font-size: 14px !important;
+          transition: all 0.2s !important;
+        }
+
+        .wx-field input:focus,
+        .wx-field textarea:focus {
+          outline: none !important;
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        }
+
+        /* Slider styling */
+        .wx-slider {
+          height: 6px !important;
+          border-radius: 3px !important;
+          background-color: #e5e7eb !important;
+        }
+
+        .wx-slider-thumb {
+          width: 18px !important;
+          height: 18px !important;
+          border-radius: 50% !important;
+          background-color: #3b82f6 !important;
+          border: 2px solid white !important;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+        }
+
+        /* Progress bar in tasks */
+        .wx-progress {
+          background-color: rgba(59, 130, 246, 0.3) !important;
+          border-radius: 3px !important;
+        }
+
+        /* Links/Dependencies */
+        .wx-link {
+          stroke: #3b82f6 !important;
+          stroke-width: 2px !important;
+        }
+
+        .wx-link:hover {
+          stroke: #2563eb !important;
+          stroke-width: 3px !important;
+        }
+
+        /* Scrollbars */
+        .wx-gantt ::-webkit-scrollbar {
+          width: 12px;
+          height: 12px;
+        }
+
+        .wx-gantt ::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+
+        .wx-gantt ::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 6px;
+        }
+
+        .wx-gantt ::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
         }
       `}</style>
     </div>
