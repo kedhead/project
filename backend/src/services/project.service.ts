@@ -397,12 +397,26 @@ export class ProjectService {
       _count: true,
     });
 
+    const tasksByStatus = taskStats.reduce((acc, item) => {
+      acc[item.status] = item._count;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalTasks = project.tasks.length;
+    const completedTasks = tasksByStatus['COMPLETED'] || 0;
+    const inProgressTasks = tasksByStatus['IN_PROGRESS'] || 0;
+    const blockedTasks = tasksByStatus['BLOCKED'] || 0;
+    const todoTasks = tasksByStatus['TODO'] || 0;
+    const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
     const stats = {
-      totalTasks: project.tasks.length,
-      tasksByStatus: taskStats.reduce((acc, item) => {
-        acc[item.status] = item._count;
-        return acc;
-      }, {} as Record<string, number>),
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      blockedTasks,
+      todoTasks,
+      completionPercentage,
+      tasksByStatus,
       tasksByPriority: priorityStats.reduce((acc, item) => {
         acc[item.priority] = item._count;
         return acc;

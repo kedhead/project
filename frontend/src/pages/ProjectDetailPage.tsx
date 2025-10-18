@@ -197,7 +197,7 @@ export const ProjectDetailPage: FC = () => {
                 <p className="text-2xl font-bold text-red-600">{stats.blockedTasks}</p>
               </div>
             </div>
-            {stats.totalTasks > 0 && (
+            {stats.totalTasks > 0 && stats.completionPercentage !== undefined && (
               <div className="card mt-4">
                 <p className="text-sm text-gray-500 mb-2">Completion Rate</p>
                 <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
