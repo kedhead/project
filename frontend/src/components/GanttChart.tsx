@@ -37,54 +37,6 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
   const apiRef = useRef<any>(null);
   const [ganttTasks, setGanttTasks] = useState<GanttTask[]>([]);
   const [ganttLinks, setGanttLinks] = useState<GanttLink[]>([]);
-  const [apiReady, setApiReady] = useState(false);
-
-  // Toolbar items configuration
-  const toolbarItems = [
-    {
-      id: 'add-task',
-      comp: 'button',
-      icon: 'wxi-plus',
-      text: 'Add Task',
-      type: 'primary',
-    },
-    {
-      id: 'delete-task',
-      comp: 'button',
-      icon: 'wxi-delete',
-      text: 'Delete',
-    },
-    {
-      type: 'separator',
-    },
-    {
-      id: 'indent-task',
-      comp: 'button',
-      icon: 'wxi-indent',
-      text: 'Indent',
-    },
-    {
-      id: 'unindent-task',
-      comp: 'button',
-      icon: 'wxi-unindent',
-      text: 'Unindent',
-    },
-    {
-      type: 'separator',
-    },
-    {
-      id: 'zoom-in',
-      comp: 'button',
-      icon: 'wxi-plus',
-      text: 'Zoom In',
-    },
-    {
-      id: 'zoom-out',
-      comp: 'button',
-      icon: 'wxi-minus',
-      text: 'Zoom Out',
-    },
-  ];
 
   // Convert dependency type to Gantt link type
   const dependencyTypeToGanttType = (type: DependencyType): string => {
@@ -149,17 +101,14 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     setGanttLinks(convertedLinks);
   }, [tasks]);
 
-  // Setup API event handlers and mark API as ready
+  // Setup API event handlers using useEffect
   useEffect(() => {
     if (!apiRef.current) return;
 
     const api = apiRef.current;
 
-    // Mark API as ready for Toolbar
-    setApiReady(true);
-
     // Handle task addition
-    api.on('add-task', async (ev: any) => {
+    const handleAddTask = async (ev: any) => {
       try {
         const task = ev.task;
         const createData: CreateTaskData = {
@@ -180,10 +129,10 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         console.error('Failed to create task:', error);
         alert(error.response?.data?.error || 'Failed to create task');
       }
-    });
+    };
 
     // Handle task update
-    api.on('update-task', async (ev: any) => {
+    const handleUpdateTask = async (ev: any) => {
       try {
         const { id, task } = ev;
         const updateData: UpdateTaskData = {
@@ -203,10 +152,10 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         alert(error.response?.data?.error || 'Failed to update task');
         onTasksChange();
       }
-    });
+    };
 
     // Handle task deletion
-    api.on('delete-task', async (ev: any) => {
+    const handleDeleteTask = async (ev: any) => {
       try {
         await taskApi.deleteTask(String(ev.id));
         onTasksChange();
@@ -215,10 +164,10 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         alert(error.response?.data?.error || 'Failed to delete task');
         onTasksChange();
       }
-    });
+    };
 
     // Handle task move (drag)
-    api.on('move-task', async (ev: any) => {
+    const handleMoveTask = async (ev: any) => {
       try {
         const { id, task } = ev;
         const updateData: UpdateTaskData = {
@@ -234,10 +183,10 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         alert(error.response?.data?.error || 'Failed to move task');
         onTasksChange();
       }
-    });
+    };
 
     // Handle link addition (dependency)
-    api.on('add-link', async (ev: any) => {
+    const handleAddLink = async (ev: any) => {
       try {
         const { link } = ev;
         await taskApi.addDependency(String(link.target), {
@@ -250,10 +199,10 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         console.error('Failed to add dependency:', error);
         alert(error.response?.data?.error || 'Failed to add dependency. This might create a circular reference.');
       }
-    });
+    };
 
     // Handle link deletion
-    api.on('delete-link', async (ev: any) => {
+    const handleDeleteLink = async (ev: any) => {
       try {
         const { id } = ev;
         const link = ganttLinks.find(l => String(l.id) === String(id));
@@ -266,7 +215,14 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         alert(error.response?.data?.error || 'Failed to remove dependency');
         onTasksChange();
       }
-    });
+    };
+
+    api.on('add-task', handleAddTask);
+    api.on('update-task', handleUpdateTask);
+    api.on('delete-task', handleDeleteTask);
+    api.on('move-task', handleMoveTask);
+    api.on('add-link', handleAddLink);
+    api.on('delete-link', handleDeleteLink);
 
   }, [apiRef.current, projectId, ganttLinks]);
 
@@ -274,11 +230,11 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     <div className="gantt-container">
       <link rel="stylesheet" href="https://cdn.svar.dev/fonts/wxi/wx-icons.css" />
       <div className="gantt-wrapper" style={{ width: '100%', height: '700px', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
-        {apiReady && <Toolbar api={apiRef.current} items={toolbarItems} />}
+        <Toolbar api={apiRef.current} />
         <Gantt
+          init={(api) => (apiRef.current = api)}
           tasks={ganttTasks}
           links={ganttLinks}
-          apiRef={apiRef}
           scales={[
             { unit: 'month', step: 1, format: 'MMMM yyyy' },
             { unit: 'day', step: 1, format: 'd' },
