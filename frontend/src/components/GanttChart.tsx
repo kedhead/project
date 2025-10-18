@@ -35,6 +35,7 @@ interface GanttLink {
 
 export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChange }) => {
   const apiRef = useRef<any>(null);
+  const handlersRegistered = useRef(false);
   const [ganttTasks, setGanttTasks] = useState<GanttTask[]>([]);
   const [ganttLinks, setGanttLinks] = useState<GanttLink[]>([]);
 
@@ -103,9 +104,10 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
 
   // Setup API event handlers using useEffect
   useEffect(() => {
-    if (!apiRef.current) return;
+    if (!apiRef.current || handlersRegistered.current) return;
 
     const api = apiRef.current;
+    handlersRegistered.current = true;
 
     // Handle task addition
     const handleAddTask = async (ev: any) => {
