@@ -276,14 +276,15 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
             { unit: 'day', step: 1, format: 'd' },
           ]}
           columns={[
-            { id: 'text', label: 'Task Name', width: 250, align: 'left' },
-            { id: 'start', label: 'Start', width: 100, align: 'center' },
-            { id: 'end', label: 'End', width: 100, align: 'center' },
-            { id: 'duration', label: 'Days', width: 60, align: 'center' },
+            { id: 'text', label: 'Task Name', width: 300, align: 'left', editor: 'text' },
+            { id: 'start', label: 'Start', width: 110, align: 'center' },
+            { id: 'end', label: 'End', width: 110, align: 'center' },
+            { id: 'duration', label: 'Days', width: 70, align: 'center' },
+            { id: 'progress', label: 'Progress', width: 80, align: 'center' },
           ]}
-          cellWidth={50}
-          cellHeight={42}
-          scaleHeight={54}
+          cellWidth={60}
+          cellHeight={44}
+          scaleHeight={60}
           readonly={false}
         />
       </div>
@@ -359,41 +360,113 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
           overflow: hidden;
         }
 
-        /* Task styling */
+        /* Task bar styling - Make them visible and colorful */
         .wx-bar {
-          border-radius: 4px !important;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+          border-radius: 6px !important;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.12) !important;
+          background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%) !important;
+          border: 1px solid #1d4ed8 !important;
+          min-height: 28px !important;
+          height: 28px !important;
         }
 
         .wx-bar:hover {
-          box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+          transform: translateY(-1px);
+          transition: all 0.2s ease;
         }
 
         .wx-bar.wx-milestone {
-          background-color: #fbbf24 !important;
+          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+          border: 2px solid #d97706 !important;
+          width: 20px !important;
+          height: 20px !important;
+          transform: rotate(45deg);
+        }
+
+        /* Task text on bars */
+        .wx-bar-label {
+          color: white !important;
+          font-weight: 500 !important;
+          font-size: 12px !important;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+          padding: 0 8px !important;
         }
 
         /* Grid styling */
+        .wx-grid {
+          font-size: 14px !important;
+        }
+
         .wx-grid-header {
           background-color: #f9fafb !important;
           border-bottom: 2px solid #e5e7eb !important;
           font-weight: 600 !important;
-          color: #374151 !important;
+          color: #111827 !important;
+          font-size: 14px !important;
+          padding: 12px 8px !important;
+        }
+
+        .wx-grid-row {
+          border-bottom: 1px solid #f3f4f6 !important;
+          transition: background-color 0.15s ease !important;
         }
 
         .wx-grid-row:hover {
           background-color: #f9fafb !important;
         }
 
+        .wx-grid-cell {
+          padding: 10px 8px !important;
+          font-size: 14px !important;
+          color: #374151 !important;
+          cursor: pointer !important;
+        }
+
+        .wx-grid-cell:first-child {
+          font-weight: 500 !important;
+          color: #111827 !important;
+        }
+
+        /* Inline editing */
+        .wx-grid-cell input {
+          width: 100% !important;
+          border: 1px solid #3b82f6 !important;
+          border-radius: 4px !important;
+          padding: 6px 8px !important;
+          font-size: 14px !important;
+          outline: none !important;
+        }
+
         /* Scale/Timeline styling */
         .wx-scale {
           background-color: #f3f4f6 !important;
           border-bottom: 1px solid #e5e7eb !important;
+          font-size: 14px !important;
         }
 
         .wx-scale-cell {
           font-weight: 500 !important;
-          color: #374151 !important;
+          color: #111827 !important;
+          padding: 8px 4px !important;
+          font-size: 13px !important;
+          line-height: 1.4 !important;
+        }
+
+        /* Timeline cells - make dates more readable */
+        .wx-chart-header {
+          font-size: 14px !important;
+        }
+
+        .wx-chart-header .wx-scale-cell {
+          font-size: 14px !important;
+          font-weight: 600 !important;
+          padding: 10px 6px !important;
+        }
+
+        /* Day numbers in timeline */
+        .wx-chart-header .wx-scale-cell:last-child .wx-scale-text {
+          font-size: 13px !important;
         }
 
         /* Editor/Modal styling */
