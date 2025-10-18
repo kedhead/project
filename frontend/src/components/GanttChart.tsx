@@ -229,7 +229,7 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
   return (
     <div className="gantt-container">
       <link rel="stylesheet" href="https://cdn.svar.dev/fonts/wxi/wx-icons.css" />
-      <div className="gantt-wrapper" style={{ width: '100%', height: '700px', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+      <div className="gantt-wrapper" style={{ width: '100%', height: '750px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
         <Toolbar api={apiRef.current} />
         <Gantt
           init={(api) => (apiRef.current = api)}
@@ -262,6 +262,40 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
           flex-direction: column;
         }
 
+        /* Toolbar styling */
+        .wx-toolbar {
+          background-color: #ffffff;
+          border-bottom: 1px solid #e5e7eb;
+          padding: 8px 12px;
+          min-height: 48px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+          z-index: 10;
+        }
+
+        .wx-toolbar button {
+          background-color: #ffffff;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-size: 14px;
+          color: #374151;
+          transition: all 0.2s;
+        }
+
+        .wx-toolbar button:hover {
+          background-color: #f9fafb;
+          border-color: #9ca3af;
+        }
+
+        .wx-toolbar button:active {
+          background-color: #f3f4f6;
+        }
+
+        /* Task styling */
         .gantt_task_line.milestone {
           background-color: #fbbf24;
         }
@@ -278,6 +312,7 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
           cursor: pointer;
         }
 
+        /* Grid styling */
         .gantt_grid_scale {
           background-color: #f9fafb;
           border-bottom: 2px solid #e5e7eb;
