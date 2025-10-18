@@ -118,7 +118,7 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
           endDate: task.end?.toISOString() || new Date(Date.now() + 86400000).toISOString(),
           duration: task.duration || 1,
           progress: Math.round((task.progress || 0) * 100),
-          parentId: task.parent,
+          parentId: task.parent && task.parent !== 0 ? String(task.parent) : undefined,
           isMilestone: task.type === 'milestone',
           color: task.color,
         };
