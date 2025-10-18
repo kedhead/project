@@ -37,6 +37,7 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
   const apiRef = useRef<any>(null);
   const [ganttTasks, setGanttTasks] = useState<GanttTask[]>([]);
   const [ganttLinks, setGanttLinks] = useState<GanttLink[]>([]);
+  const [apiReady, setApiReady] = useState(false);
 
   // Toolbar items configuration
   const toolbarItems = [
@@ -148,11 +149,14 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     setGanttLinks(convertedLinks);
   }, [tasks]);
 
-  // Setup API event handlers
+  // Setup API event handlers and mark API as ready
   useEffect(() => {
     if (!apiRef.current) return;
 
     const api = apiRef.current;
+
+    // Mark API as ready for Toolbar
+    setApiReady(true);
 
     // Handle task addition
     api.on('add-task', async (ev: any) => {
@@ -270,7 +274,7 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     <div className="gantt-container">
       <link rel="stylesheet" href="https://cdn.svar.dev/fonts/wxi/wx-icons.css" />
       <div className="gantt-wrapper" style={{ width: '100%', height: '700px', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
-        <Toolbar api={apiRef.current} items={toolbarItems} />
+        {apiReady && <Toolbar api={apiRef.current} items={toolbarItems} />}
         <Gantt
           tasks={ganttTasks}
           links={ganttLinks}
