@@ -109,6 +109,11 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     const api = apiRef.current;
     handlersRegistered.current = true;
 
+    // Prevent the editor popup from opening
+    api.intercept('show-editor', () => {
+      return false; // Return false to prevent the editor from showing
+    });
+
     // Handle task addition
     let isCreating = false;
     const handleAddTask = async (ev: any) => {
@@ -239,39 +244,6 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
 
   }, [apiRef.current]);
 
-  // Configure editor shape
-  const editorShape = [
-    {
-      key: "text",
-      type: "text",
-      label: "Task Name",
-      config: {
-        placeholder: "Enter task name",
-        focus: true,
-      },
-    },
-    {
-      key: "start",
-      type: "date",
-      label: "Start Date",
-    },
-    {
-      key: "end",
-      type: "date",
-      label: "End Date",
-    },
-    {
-      key: "duration",
-      type: "counter",
-      label: "Duration (days)",
-    },
-    {
-      key: "progress",
-      type: "slider",
-      label: "Progress (%)",
-    },
-  ];
-
   return (
     <div className="gantt-container">
       <link rel="stylesheet" href="https://cdn.svar.dev/fonts/wxi/wx-icons.css" />
@@ -281,7 +253,6 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
           init={(api) => (apiRef.current = api)}
           tasks={ganttTasks}
           links={ganttLinks}
-          editor={false}
           scales={[
             { unit: 'month', step: 1, format: 'MMMM yyyy' },
             { unit: 'day', step: 1, format: 'd' },
