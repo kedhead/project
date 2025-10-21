@@ -150,6 +150,12 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     // Handle task update
     const handleUpdateTask = async (ev: any) => {
       try {
+        console.log('=== UPDATE-TASK EVENT ===');
+        console.log('Full event object:', ev);
+        console.log('Event ID:', ev.id);
+        console.log('Event task:', ev.task);
+        console.log('========================');
+
         const { id, task } = ev;
         const updateData: UpdateTaskData = {};
 
@@ -161,7 +167,9 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         if (task.type !== undefined) updateData.isMilestone = task.type === 'milestone';
         if (task.color) updateData.color = task.color;
 
+        console.log('Sending update to API:', { id: String(id), updateData });
         await taskApi.updateTask(String(id), updateData);
+        console.log('Update successful, refreshing data...');
         // Refresh to show the updated task
         onTasksChange();
       } catch (error: any) {
@@ -233,12 +241,14 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
       }
     };
 
+    console.log('Registering event handlers...');
     api.on('add-task', handleAddTask);
     api.on('update-task', handleUpdateTask);
     api.on('delete-task', handleDeleteTask);
     api.on('move-task', handleMoveTask);
     api.on('add-link', handleAddLink);
     api.on('delete-link', handleDeleteLink);
+    console.log('Event handlers registered successfully');
 
   }, [apiRef.current]);
 
