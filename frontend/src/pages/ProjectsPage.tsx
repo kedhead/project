@@ -60,7 +60,13 @@ export const ProjectsPage: FC = () => {
 
     try {
       setCreating(true);
-      await projectApi.createProject(newProject);
+      // Remove empty date strings to avoid validation errors
+      const projectData = {
+        ...newProject,
+        startDate: newProject.startDate || undefined,
+        endDate: newProject.endDate || undefined,
+      };
+      await projectApi.createProject(projectData);
       setShowCreateModal(false);
       setNewProject({
         name: '',
