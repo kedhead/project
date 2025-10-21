@@ -109,10 +109,38 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     const api = apiRef.current;
     handlersRegistered.current = true;
 
-    // Prevent the editor popup from opening
-    api.intercept('show-editor', () => {
-      return false; // Return false to prevent the editor from showing
-    });
+    // Debug: Log all available methods
+    console.log('Gantt API methods:', Object.keys(api));
+    console.log('Gantt API type:', typeof api);
+
+    // Prevent the editor popup from opening - try different event names
+    const preventEditor = () => {
+      console.log('Intercepting editor');
+      return false;
+    };
+
+    // Try multiple possible event names
+    if (api.intercept) {
+      console.log('Setting up intercept handlers');
+      try {
+        api.intercept('show-editor', preventEditor);
+        api.intercept('open-editor', preventEditor);
+        api.intercept('edit-task', preventEditor);
+      } catch (e) {
+        console.error('Error setting up intercept:', e);
+      }
+    } else {
+      console.log('No intercept method available');
+    }
+
+    // Also try event listeners
+    if (api.on) {
+      api.on('show-editor', (ev: any) => {
+        console.log('show-editor event fired', ev);
+        if (ev && ev.preventDefault) ev.preventDefault();
+        return false;
+      });
+    }
 
     // Handle task addition
     let isCreating = false;
