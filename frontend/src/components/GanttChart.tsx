@@ -78,7 +78,7 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
       start: new Date(task.startDate),
       end: new Date(task.endDate),
       duration: task.duration || 1,
-      progress: (task.progress || 0) / 100, // Gantt expects 0-1
+      progress: task.progress || 0, // Show as 0-100 for display
       parent: task.parentId,
       type: task.isMilestone ? 'milestone' : 'task',
       color: task.color,
@@ -110,8 +110,15 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     handlersRegistered.current = true;
 
     // Handle task addition
+    let isCreating = false;
     const handleAddTask = async (ev: any) => {
+      if (isCreating) {
+        console.log('Task creation already in progress, skipping...');
+        return;
+      }
+
       try {
+        isCreating = true;
         const task = ev.task;
         const createData: CreateTaskData = {
           projectId,
@@ -119,15 +126,19 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
           startDate: task.start?.toISOString() || new Date().toISOString(),
           endDate: task.end?.toISOString() || new Date(Date.now() + 86400000).toISOString(),
           duration: task.duration || 1,
-          progress: Math.round((task.progress || 0) * 100),
+          progress: Math.round(task.progress || 0), // Already 0-100
           parentId: task.parent && task.parent !== 0 ? String(task.parent) : undefined,
           isMilestone: task.type === 'milestone',
           color: task.color,
         };
 
         await taskApi.createTask(createData);
-        onTasksChange();
+        setTimeout(() => {
+          onTasksChange();
+          isCreating = false;
+        }, 500);
       } catch (error: any) {
+        isCreating = false;
         console.error('Failed to create task:', error);
         alert(error.response?.data?.error || 'Failed to create task');
       }
@@ -139,20 +150,20 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         const { id, task } = ev;
         const updateData: UpdateTaskData = {};
 
-        if (task.text) updateData.title = task.text;
+        if (task.text !== undefined) updateData.title = task.text;
         if (task.start) updateData.startDate = task.start.toISOString();
         if (task.end) updateData.endDate = task.end.toISOString();
         if (task.duration !== undefined) updateData.duration = task.duration;
-        if (task.progress !== undefined) updateData.progress = Math.round((task.progress || 0) * 100);
+        if (task.progress !== undefined) updateData.progress = Math.round(task.progress); // Already 0-100
         if (task.type !== undefined) updateData.isMilestone = task.type === 'milestone';
         if (task.color) updateData.color = task.color;
 
         await taskApi.updateTask(String(id), updateData);
-        onTasksChange();
+        // Don't refresh immediately to allow inline editing to work smoothly
+        // onTasksChange();
       } catch (error: any) {
         console.error('Failed to update task:', error);
         alert(error.response?.data?.error || 'Failed to update task');
-        onTasksChange();
       }
     };
 
@@ -270,17 +281,17 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
           init={(api) => (apiRef.current = api)}
           tasks={ganttTasks}
           links={ganttLinks}
-          editorShape={editorShape}
+          editor={false}
           scales={[
             { unit: 'month', step: 1, format: 'MMMM yyyy' },
             { unit: 'day', step: 1, format: 'd' },
           ]}
           columns={[
             { id: 'text', label: 'Task Name', width: 300, align: 'left', editor: 'text' },
-            { id: 'start', label: 'Start', width: 110, align: 'center' },
-            { id: 'end', label: 'End', width: 110, align: 'center' },
-            { id: 'duration', label: 'Days', width: 70, align: 'center' },
-            { id: 'progress', label: 'Progress', width: 80, align: 'center' },
+            { id: 'start', label: 'Start', width: 110, align: 'center', editor: 'date' },
+            { id: 'end', label: 'End', width: 110, align: 'center', editor: 'date' },
+            { id: 'duration', label: 'Days', width: 70, align: 'center', editor: 'number' },
+            { id: 'progress', label: 'Progress %', width: 90, align: 'center', editor: 'number' },
           ]}
           cellWidth={60}
           cellHeight={44}
@@ -408,7 +419,7 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         }
 
         .wx-grid-row {
-          border-bottom: 1px solid #f3f4f6 !important;
+          border-bottom: 1px solid #e5e7eb !important;
           transition: background-color 0.15s ease !important;
         }
 
@@ -421,6 +432,7 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
           font-size: 14px !important;
           color: #374151 !important;
           cursor: pointer !important;
+          border-right: 1px solid #f3f4f6 !important;
         }
 
         .wx-grid-cell:first-child {
