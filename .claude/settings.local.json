@@ -22,7 +22,15 @@
       "Bash(for file in services/*.ts controllers/*.ts routes/*.ts)",
       "Bash(do sed -i \"s/\\.js''/''/\" \"$file\")",
       "Bash(echo:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "WebSearch",
+      "WebFetch(domain:svar.dev)",
+      "WebFetch(domain:docs.svar.dev)",
+      "WebFetch(domain:codesandbox.io)",
+      "Bash(jobs)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm view:*)"
     ],
     "deny": [],
     "ask": []

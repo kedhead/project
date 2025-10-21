@@ -1,8 +1,8 @@
 import { FC, useEffect, useRef, useState } from 'react';
-import { Gantt, Toolbar } from 'wx-react-gantt';
-import 'wx-react-gantt/dist/gantt.css';
-import { Task, TaskStatus, TaskPriority, DependencyType } from '../types';
+import { Task, DependencyType } from '../types';
 import { taskApi, CreateTaskData, UpdateTaskData } from '../api/task.api';
+// @ts-ignore - Svelte component import
+import SvelteGanttComponent from './SvelteGantt.svelte';
 
 interface GanttChartProps {
   projectId: string;
@@ -20,9 +20,6 @@ interface GanttTask {
   progress: number;
   parent?: string | number;
   type?: string;
-  color?: string;
-  custom_status?: TaskStatus;
-  custom_priority?: TaskPriority;
 }
 
 // Gantt link format
@@ -34,8 +31,8 @@ interface GanttLink {
 }
 
 export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChange }) => {
-  const apiRef = useRef<any>(null);
-  const handlersRegistered = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const svelteComponentRef = useRef<any>(null);
   const [ganttTasks, setGanttTasks] = useState<GanttTask[]>([]);
   const [ganttLinks, setGanttLinks] = useState<GanttLink[]>([]);
 
@@ -43,13 +40,13 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
   const dependencyTypeToGanttType = (type: DependencyType): string => {
     switch (type) {
       case DependencyType.FINISH_TO_START:
-        return 'e2s'; // end-to-start
+        return 'e2s';
       case DependencyType.START_TO_START:
-        return 's2s'; // start-to-start
+        return 's2s';
       case DependencyType.FINISH_TO_FINISH:
-        return 'e2e'; // end-to-end
+        return 'e2e';
       case DependencyType.START_TO_FINISH:
-        return 's2e'; // start-to-end
+        return 's2e';
       default:
         return 'e2s';
     }
@@ -78,12 +75,9 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
       start: new Date(task.startDate),
       end: new Date(task.endDate),
       duration: task.duration || 1,
-      progress: task.progress || 0, // Show as 0-100 for display
+      progress: task.progress || 0,
       parent: task.parentId,
       type: task.isMilestone ? 'milestone' : 'task',
-      color: task.color,
-      custom_status: task.status,
-      custom_priority: task.priority,
     }));
 
     const convertedLinks: GanttLink[] = [];
@@ -102,479 +96,157 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     setGanttLinks(convertedLinks);
   }, [tasks]);
 
-  // Setup API event handlers using useEffect
+  // Event handlers for CRUD operations
+  const handleTaskAdd = async (ev: any) => {
+    try {
+      console.log('=== ADD-TASK EVENT ===');
+      console.log('Event:', ev);
+
+      const task = ev.task || ev;
+      const createData: CreateTaskData = {
+        projectId,
+        title: task.text || 'New Task',
+        startDate: task.start?.toISOString() || new Date().toISOString(),
+        endDate: task.end?.toISOString() || new Date(Date.now() + 86400000).toISOString(),
+        duration: task.duration || 1,
+        progress: Math.round(task.progress || 0),
+        parentId: task.parent && task.parent !== 0 ? String(task.parent) : undefined,
+        isMilestone: task.type === 'milestone',
+      };
+
+      await taskApi.createTask(createData);
+      setTimeout(() => {
+        onTasksChange();
+      }, 500);
+    } catch (error: any) {
+      console.error('Failed to create task:', error);
+      alert(error.response?.data?.error || 'Failed to create task');
+    }
+  };
+
+  const handleTaskUpdate = async (ev: any) => {
+    try {
+      console.log('=== UPDATE-TASK EVENT ===');
+      console.log('Event:', ev);
+
+      const { id, task } = ev;
+      const updateData: UpdateTaskData = {};
+
+      if (task.text !== undefined) updateData.title = task.text;
+      if (task.start) updateData.startDate = task.start.toISOString();
+      if (task.end) updateData.endDate = task.end.toISOString();
+      if (task.duration !== undefined) updateData.duration = task.duration;
+      if (task.progress !== undefined) updateData.progress = Math.round(task.progress);
+      if (task.type !== undefined) updateData.isMilestone = task.type === 'milestone';
+
+      console.log('Updating task:', id, updateData);
+      await taskApi.updateTask(String(id), updateData);
+      console.log('Task updated successfully');
+
+      // Refresh after update
+      onTasksChange();
+    } catch (error: any) {
+      console.error('Failed to update task:', error);
+      alert(error.response?.data?.error || 'Failed to update task');
+    }
+  };
+
+  const handleTaskDelete = async (ev: any) => {
+    try {
+      console.log('=== DELETE-TASK EVENT ===');
+      console.log('Event:', ev);
+
+      await taskApi.deleteTask(String(ev.id));
+      onTasksChange();
+    } catch (error: any) {
+      console.error('Failed to delete task:', error);
+      alert(error.response?.data?.error || 'Failed to delete task');
+      onTasksChange();
+    }
+  };
+
+  const handleLinkAdd = async (ev: any) => {
+    try {
+      console.log('=== ADD-LINK EVENT ===');
+      console.log('Event:', ev);
+
+      const { link } = ev;
+      await taskApi.addDependency(String(link.target), {
+        dependsOnId: String(link.source),
+        type: ganttTypeToDependencyType(link.type),
+        lagDays: 0,
+      });
+      onTasksChange();
+    } catch (error: any) {
+      console.error('Failed to add dependency:', error);
+      alert(error.response?.data?.error || 'Failed to add dependency');
+    }
+  };
+
+  const handleLinkDelete = async (ev: any) => {
+    try {
+      console.log('=== DELETE-LINK EVENT ===');
+      console.log('Event:', ev);
+
+      const { id } = ev;
+      const link = ganttLinks.find(l => String(l.id) === String(id));
+      if (link) {
+        await taskApi.removeDependency(String(link.target), String(link.source));
+        onTasksChange();
+      }
+    } catch (error: any) {
+      console.error('Failed to remove dependency:', error);
+      alert(error.response?.data?.error || 'Failed to remove dependency');
+      onTasksChange();
+    }
+  };
+
+  // Mount/unmount Svelte component
   useEffect(() => {
-    if (!apiRef.current || handlersRegistered.current) return;
+    if (!containerRef.current) return;
 
-    const api = apiRef.current;
-    handlersRegistered.current = true;
+    console.log('Mounting Svelte Gantt component...');
 
-    // Note: NOT intercepting the editor - let the default edit form work
-    // The edit form appears when double-clicking a task or row
+    // Mount the Svelte component
+    svelteComponentRef.current = new SvelteGanttComponent({
+      target: containerRef.current,
+      props: {
+        tasks: ganttTasks,
+        links: ganttLinks,
+        onTaskAdd: handleTaskAdd,
+        onTaskUpdate: handleTaskUpdate,
+        onTaskDelete: handleTaskDelete,
+        onLinkAdd: handleLinkAdd,
+        onLinkDelete: handleLinkDelete,
+      },
+    });
 
-    // Handle task addition
-    let isCreating = false;
-    const handleAddTask = async (ev: any) => {
-      if (isCreating) {
-        console.log('Task creation already in progress, skipping...');
-        return;
-      }
+    console.log('Svelte Gantt component mounted');
 
-      try {
-        isCreating = true;
-        const task = ev.task;
-        const createData: CreateTaskData = {
-          projectId,
-          title: task.text || 'New Task',
-          startDate: task.start?.toISOString() || new Date().toISOString(),
-          endDate: task.end?.toISOString() || new Date(Date.now() + 86400000).toISOString(),
-          duration: task.duration || 1,
-          progress: Math.round(task.progress || 0), // Already 0-100
-          parentId: task.parent && task.parent !== 0 ? String(task.parent) : undefined,
-          isMilestone: task.type === 'milestone',
-          color: task.color,
-        };
-
-        await taskApi.createTask(createData);
-        setTimeout(() => {
-          onTasksChange();
-          isCreating = false;
-        }, 500);
-      } catch (error: any) {
-        isCreating = false;
-        console.error('Failed to create task:', error);
-        alert(error.response?.data?.error || 'Failed to create task');
+    // Cleanup on unmount
+    return () => {
+      if (svelteComponentRef.current) {
+        console.log('Unmounting Svelte Gantt component');
+        svelteComponentRef.current.$destroy();
       }
     };
+  }, []); // Only mount once
 
-    // Handle task update
-    const handleUpdateTask = async (ev: any) => {
-      try {
-        console.log('=== UPDATE-TASK EVENT ===');
-        console.log('Full event object:', ev);
-        console.log('Event ID:', ev.id);
-        console.log('Event task:', ev.task);
-        console.log('========================');
-
-        const { id, task } = ev;
-        const updateData: UpdateTaskData = {};
-
-        if (task.text !== undefined) updateData.title = task.text;
-        if (task.start) updateData.startDate = task.start.toISOString();
-        if (task.end) updateData.endDate = task.end.toISOString();
-        if (task.duration !== undefined) updateData.duration = task.duration;
-        if (task.progress !== undefined) updateData.progress = Math.round(task.progress); // Already 0-100
-        if (task.type !== undefined) updateData.isMilestone = task.type === 'milestone';
-        if (task.color) updateData.color = task.color;
-
-        console.log('Sending update to API:', { id: String(id), updateData });
-        await taskApi.updateTask(String(id), updateData);
-        console.log('Update successful, refreshing data...');
-        // Refresh to show the updated task
-        onTasksChange();
-      } catch (error: any) {
-        console.error('Failed to update task:', error);
-        alert(error.response?.data?.error || 'Failed to update task');
-      }
-    };
-
-    // Handle task deletion
-    const handleDeleteTask = async (ev: any) => {
-      try {
-        await taskApi.deleteTask(String(ev.id));
-        onTasksChange();
-      } catch (error: any) {
-        console.error('Failed to delete task:', error);
-        alert(error.response?.data?.error || 'Failed to delete task');
-        onTasksChange();
-      }
-    };
-
-    // Handle task move (drag)
-    const handleMoveTask = async (ev: any) => {
-      try {
-        const { id, task } = ev;
-        const updateData: UpdateTaskData = {};
-
-        if (task.start) updateData.startDate = task.start.toISOString();
-        if (task.end) updateData.endDate = task.end.toISOString();
-        if (task.duration !== undefined) updateData.duration = task.duration;
-
-        await taskApi.updateTask(String(id), updateData);
-        onTasksChange();
-      } catch (error: any) {
-        console.error('Failed to move task:', error);
-        alert(error.response?.data?.error || 'Failed to move task');
-        onTasksChange();
-      }
-    };
-
-    // Handle link addition (dependency)
-    const handleAddLink = async (ev: any) => {
-      try {
-        const { link } = ev;
-        await taskApi.addDependency(String(link.target), {
-          dependsOnId: String(link.source),
-          type: ganttTypeToDependencyType(link.type),
-          lagDays: 0,
-        });
-        onTasksChange();
-      } catch (error: any) {
-        console.error('Failed to add dependency:', error);
-        alert(error.response?.data?.error || 'Failed to add dependency. This might create a circular reference.');
-      }
-    };
-
-    // Handle link deletion
-    const handleDeleteLink = async (ev: any) => {
-      try {
-        const { id } = ev;
-        const link = ganttLinks.find(l => String(l.id) === String(id));
-        if (link) {
-          await taskApi.removeDependency(String(link.target), String(link.source));
-          onTasksChange();
-        }
-      } catch (error: any) {
-        console.error('Failed to remove dependency:', error);
-        alert(error.response?.data?.error || 'Failed to remove dependency');
-        onTasksChange();
-      }
-    };
-
-    console.log('Registering event handlers...');
-    api.on('add-task', handleAddTask);
-    api.on('update-task', handleUpdateTask);
-    api.on('delete-task', handleDeleteTask);
-    api.on('move-task', handleMoveTask);
-    api.on('add-link', handleAddLink);
-    api.on('delete-link', handleDeleteLink);
-    console.log('Event handlers registered successfully');
-
-  }, [apiRef.current]);
+  // Update props when tasks/links change
+  useEffect(() => {
+    if (svelteComponentRef.current) {
+      console.log('Updating Svelte component props...');
+      svelteComponentRef.current.$set({
+        tasks: ganttTasks,
+        links: ganttLinks,
+      });
+    }
+  }, [ganttTasks, ganttLinks]);
 
   return (
     <div className="gantt-container">
       <link rel="stylesheet" href="https://cdn.svar.dev/fonts/wxi/wx-icons.css" />
-      <div className="gantt-wrapper">
-        <Toolbar api={apiRef.current} />
-        <Gantt
-          init={(api) => (apiRef.current = api)}
-          tasks={ganttTasks}
-          links={ganttLinks}
-          scales={[
-            { unit: 'month', step: 1, format: 'MMMM yyyy' },
-            { unit: 'day', step: 1, format: 'd' },
-          ]}
-          columns={[
-            { id: 'text', header: 'Task Name', width: '300px', align: 'left', flexgrow: 1, editor: 'text' },
-            { id: 'start', header: 'Start', width: '110px', align: 'center', editor: 'datepicker' },
-            { id: 'end', header: 'End', width: '110px', align: 'center', editor: 'datepicker' },
-            { id: 'duration', header: 'Days', width: '70px', align: 'center', editor: 'text' },
-            { id: 'progress', header: 'Progress %', width: '90px', align: 'center', editor: 'text' },
-          ]}
-          cellWidth={60}
-          cellHeight={44}
-          scaleHeight={60}
-          readonly={false}
-        />
-      </div>
-
-      <style>{`
-        .gantt-container {
-          width: 100%;
-          height: 800px;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .gantt-wrapper {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          overflow: hidden;
-          background: white;
-        }
-
-        /* Toolbar styling */
-        .wx-toolbar {
-          background-color: #ffffff;
-          border-bottom: 1px solid #e5e7eb;
-          padding: 12px 16px !important;
-          min-height: 60px !important;
-          display: flex !important;
-          align-items: center;
-          gap: 8px;
-          flex-shrink: 0;
-          z-index: 100;
-        }
-
-        .wx-toolbar button {
-          background-color: #ffffff !important;
-          border: 1px solid #d1d5db !important;
-          border-radius: 6px !important;
-          padding: 8px 16px !important;
-          cursor: pointer !important;
-          font-size: 14px !important;
-          color: #374151 !important;
-          transition: all 0.2s !important;
-          font-weight: 500 !important;
-          height: auto !important;
-          min-height: 36px !important;
-        }
-
-        .wx-toolbar button:hover {
-          background-color: #f9fafb !important;
-          border-color: #9ca3af !important;
-        }
-
-        .wx-toolbar button:active {
-          background-color: #f3f4f6 !important;
-        }
-
-        .wx-toolbar button.wx-primary {
-          background-color: #3b82f6 !important;
-          color: white !important;
-          border-color: #3b82f6 !important;
-        }
-
-        .wx-toolbar button.wx-primary:hover {
-          background-color: #2563eb !important;
-          border-color: #2563eb !important;
-        }
-
-        /* Gantt main container */
-        .wx-gantt {
-          flex: 1;
-          overflow: hidden;
-        }
-
-        /* Task bar styling - Make them visible and colorful */
-        .wx-bar {
-          border-radius: 6px !important;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.12) !important;
-          background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%) !important;
-          border: 1px solid #1d4ed8 !important;
-          min-height: 28px !important;
-          height: 28px !important;
-        }
-
-        .wx-bar:hover {
-          box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
-          transform: translateY(-1px);
-          transition: all 0.2s ease;
-        }
-
-        .wx-bar.wx-milestone {
-          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
-          border: 2px solid #d97706 !important;
-          width: 20px !important;
-          height: 20px !important;
-          transform: rotate(45deg);
-        }
-
-        /* Task text on bars */
-        .wx-bar-label {
-          color: white !important;
-          font-weight: 500 !important;
-          font-size: 12px !important;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
-          padding: 0 8px !important;
-        }
-
-        /* Grid styling */
-        .wx-grid {
-          font-size: 14px !important;
-        }
-
-        .wx-grid-header {
-          background-color: #f9fafb !important;
-          border-bottom: 2px solid #e5e7eb !important;
-          font-weight: 600 !important;
-          color: #111827 !important;
-          font-size: 14px !important;
-          padding: 12px 8px !important;
-        }
-
-        .wx-grid-row {
-          border-bottom: 1px solid #e5e7eb !important;
-          transition: background-color 0.15s ease !important;
-        }
-
-        .wx-grid-row:hover {
-          background-color: #f9fafb !important;
-        }
-
-        .wx-grid-cell {
-          padding: 10px 8px !important;
-          font-size: 14px !important;
-          color: #374151 !important;
-          cursor: pointer !important;
-          border-right: 1px solid #f3f4f6 !important;
-        }
-
-        .wx-grid-cell:first-child {
-          font-weight: 500 !important;
-          color: #111827 !important;
-        }
-
-        /* Inline editing */
-        .wx-grid-cell input {
-          width: 100% !important;
-          border: 1px solid #3b82f6 !important;
-          border-radius: 4px !important;
-          padding: 6px 8px !important;
-          font-size: 14px !important;
-          outline: none !important;
-        }
-
-        /* Scale/Timeline styling */
-        .wx-scale {
-          background-color: #f3f4f6 !important;
-          border-bottom: 1px solid #e5e7eb !important;
-          font-size: 14px !important;
-        }
-
-        .wx-scale-cell {
-          font-weight: 500 !important;
-          color: #111827 !important;
-          padding: 8px 4px !important;
-          font-size: 13px !important;
-          line-height: 1.4 !important;
-        }
-
-        /* Timeline cells - make dates more readable */
-        .wx-chart-header {
-          font-size: 14px !important;
-        }
-
-        .wx-chart-header .wx-scale-cell {
-          font-size: 14px !important;
-          font-weight: 600 !important;
-          padding: 10px 6px !important;
-        }
-
-        /* Day numbers in timeline */
-        .wx-chart-header .wx-scale-cell:last-child .wx-scale-text {
-          font-size: 13px !important;
-        }
-
-        /* Editor/Modal styling */
-        .wx-modal {
-          z-index: 1000 !important;
-        }
-
-        .wx-modal-content {
-          border-radius: 12px !important;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-          max-width: 500px !important;
-        }
-
-        .wx-modal-header {
-          padding: 20px 24px !important;
-          border-bottom: 1px solid #e5e7eb !important;
-          font-size: 18px !important;
-          font-weight: 600 !important;
-          color: #111827 !important;
-        }
-
-        .wx-modal-body {
-          padding: 24px !important;
-        }
-
-        .wx-modal-footer {
-          padding: 16px 24px !important;
-          border-top: 1px solid #e5e7eb !important;
-          display: flex !important;
-          gap: 12px !important;
-          justify-content: flex-end !important;
-        }
-
-        /* Form fields in editor */
-        .wx-field {
-          margin-bottom: 20px !important;
-        }
-
-        .wx-field label {
-          display: block !important;
-          margin-bottom: 6px !important;
-          font-weight: 500 !important;
-          color: #374151 !important;
-          font-size: 14px !important;
-        }
-
-        .wx-field input[type="text"],
-        .wx-field input[type="date"],
-        .wx-field input[type="number"],
-        .wx-field textarea {
-          width: 100% !important;
-          padding: 10px 12px !important;
-          border: 1px solid #d1d5db !important;
-          border-radius: 6px !important;
-          font-size: 14px !important;
-          transition: all 0.2s !important;
-        }
-
-        .wx-field input:focus,
-        .wx-field textarea:focus {
-          outline: none !important;
-          border-color: #3b82f6 !important;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-        }
-
-        /* Slider styling */
-        .wx-slider {
-          height: 6px !important;
-          border-radius: 3px !important;
-          background-color: #e5e7eb !important;
-        }
-
-        .wx-slider-thumb {
-          width: 18px !important;
-          height: 18px !important;
-          border-radius: 50% !important;
-          background-color: #3b82f6 !important;
-          border: 2px solid white !important;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
-        }
-
-        /* Progress bar in tasks */
-        .wx-progress {
-          background-color: rgba(59, 130, 246, 0.3) !important;
-          border-radius: 3px !important;
-        }
-
-        /* Links/Dependencies */
-        .wx-link {
-          stroke: #3b82f6 !important;
-          stroke-width: 2px !important;
-        }
-
-        .wx-link:hover {
-          stroke: #2563eb !important;
-          stroke-width: 3px !important;
-        }
-
-        /* Scrollbars */
-        .wx-gantt ::-webkit-scrollbar {
-          width: 12px;
-          height: 12px;
-        }
-
-        .wx-gantt ::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-
-        .wx-gantt ::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 6px;
-        }
-
-        .wx-gantt ::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-      `}</style>
+      <div ref={containerRef} style={{ width: '100%', height: '800px' }} />
     </div>
   );
 };
