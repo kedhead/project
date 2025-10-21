@@ -266,11 +266,11 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
             { unit: 'day', step: 1, format: 'd' },
           ]}
           columns={[
-            { id: 'text', header: 'Task Name', width: '300px', align: 'left', flexgrow: 1 },
-            { id: 'start', header: 'Start', width: '110px', align: 'center' },
-            { id: 'end', header: 'End', width: '110px', align: 'center' },
-            { id: 'duration', header: 'Days', width: '70px', align: 'center' },
-            { id: 'progress', header: 'Progress %', width: '90px', align: 'center' },
+            { id: 'text', header: 'Task Name', width: '300px', align: 'left', flexgrow: 1, editor: 'text' },
+            { id: 'start', header: 'Start', width: '110px', align: 'center', editor: 'datepicker' },
+            { id: 'end', header: 'End', width: '110px', align: 'center', editor: 'datepicker' },
+            { id: 'duration', header: 'Days', width: '70px', align: 'center', editor: 'text' },
+            { id: 'progress', header: 'Progress %', width: '90px', align: 'center', editor: 'text' },
           ]}
           cellWidth={60}
           cellHeight={44}
