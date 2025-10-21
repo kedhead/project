@@ -1,5 +1,5 @@
 import { FC, useEffect, useRef, useState } from 'react';
-import { Gantt, Toolbar, defaultEditorShape } from 'wx-react-gantt';
+import { Gantt, Toolbar } from 'wx-react-gantt';
 import 'wx-react-gantt/dist/gantt.css';
 import { Task, TaskStatus, TaskPriority, DependencyType } from '../types';
 import { taskApi, CreateTaskData, UpdateTaskData } from '../api/task.api';
@@ -109,14 +109,8 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
     const api = apiRef.current;
     handlersRegistered.current = true;
 
-    // Disable the popup editor completely
-    // Inline editing in grid cells should still work (single-click on cells)
-    // This prevents the popup editor that appears on double-click of task bars
-    api.intercept('show-editor', (ev: any) => {
-      console.log('Intercepted show-editor event', ev);
-      // Return false to prevent the popup editor from opening
-      return false;
-    });
+    // Note: NOT intercepting the editor - let the default edit form work
+    // The edit form appears when double-clicking a task or row
 
     // Handle task addition
     let isCreating = false;
@@ -168,8 +162,8 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
         if (task.color) updateData.color = task.color;
 
         await taskApi.updateTask(String(id), updateData);
-        // Don't refresh immediately to allow inline editing to work smoothly
-        // onTasksChange();
+        // Refresh to show the updated task
+        onTasksChange();
       } catch (error: any) {
         console.error('Failed to update task:', error);
         alert(error.response?.data?.error || 'Failed to update task');
@@ -262,11 +256,11 @@ export const GanttChart: FC<GanttChartProps> = ({ projectId, tasks, onTasksChang
             { unit: 'day', step: 1, format: 'd' },
           ]}
           columns={[
-            { id: 'text', label: 'Task Name', width: 300, align: 'left', editor: 'text' },
-            { id: 'start', label: 'Start', width: 110, align: 'center', editor: 'date' },
-            { id: 'end', label: 'End', width: 110, align: 'center', editor: 'date' },
-            { id: 'duration', label: 'Days', width: 70, align: 'center', editor: 'number' },
-            { id: 'progress', label: 'Progress %', width: 90, align: 'center', editor: 'number' },
+            { id: 'text', header: 'Task Name', width: '300px', align: 'left', flexgrow: 1 },
+            { id: 'start', header: 'Start', width: '110px', align: 'center' },
+            { id: 'end', header: 'End', width: '110px', align: 'center' },
+            { id: 'duration', header: 'Days', width: '70px', align: 'center' },
+            { id: 'progress', header: 'Progress %', width: '90px', align: 'center' },
           ]}
           cellWidth={60}
           cellHeight={44}
